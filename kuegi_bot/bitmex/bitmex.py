@@ -227,15 +227,14 @@ class BitMEX(object):
         auth = APIKeyAuthWithExpires(self.apiKey, self.apiSecret)
 
         def exit_or_throw(e):
-            if rethrow_errors:
-                raise e
-            else:
-                exit(1)
+            self.logger.error("error while sending to bitmex: %s, exiting" % str(e))
+            exit(1)
 
         def retry():
             self.retries += 1
             if self.retries > max_retries:
-                raise Exception("Max retries on %s (%s) hit, raising." % (path, json.dumps(postdict or '')))
+                self.logger.error("Max retries on %s (%s) hit, exiting." % (path, json.dumps(postdict or '')))
+                exit(1)
             return self._curl_bitmex(path, query, postdict, timeout, verb, rethrow_errors, max_retries)
 
         # Make the request
