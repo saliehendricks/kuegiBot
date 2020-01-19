@@ -2,6 +2,7 @@ import traceback
 from datetime import datetime
 from time import sleep
 from typing import List
+import time
 
 import plotly.graph_objects as go
 
@@ -17,7 +18,7 @@ class LiveTrading(OrderInterface):
     def __init__(self, settings, trading_bot: TradingBot):
         self.settings = settings
         self.id = self.settings.id
-        self.got_tick= False
+        self.last_tick= 0
 
         self.logger = log.setup_custom_logger(name=settings.id,
                                               log_level=settings.LOG_LEVEL,
@@ -38,7 +39,7 @@ class LiveTrading(OrderInterface):
             self.symbolInfo: Symbol = self.exchange.get_instrument()
             self.bot: TradingBot = trading_bot
             self.bot.logger = self.logger
-            self.bot.order_interface = self.exchange
+            self.bot.order_interface = self
             # init market data dict to be filled later
             self.bars: List[Bar] = []
             self.update_bars()
@@ -50,7 +51,7 @@ class LiveTrading(OrderInterface):
             self.alive = False
 
     def on_tick(self):
-        self.got_tick= True
+        self.last_tick= time.time()
 
     def print_status(self):
         """Print the current status."""
@@ -153,7 +154,6 @@ class LiveTrading(OrderInterface):
 
     def handle_tick(self):
         try:
-            self.got_tick= False
             self.update_bars()
             self.update_account()
             self.bot.on_tick(self.bars, self.account)
@@ -164,10 +164,13 @@ class LiveTrading(OrderInterface):
             raise e
 
     def run_loop(self):
-        import time
         last = 0
         while self.alive:
-            if time.time() - last > self.settings.LOOP_INTERVAL or self.got_tick:
+            current= time.time()
+            # execute if last execution is to long ago
+            # or there was a tick since the last execution but the tick is more than debounce ms ago (to prevent race condition of account updates etc.)
+            if current - last > self.settings.LOOP_INTERVAL or \
+                    (self.last_tick > last and self.last_tick < current - 1):
                 last= time.time()
                 if not self.check_connection():
                     self.logger.error("Realtime data connection unexpectedly closed, exiting.")
