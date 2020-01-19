@@ -15,8 +15,8 @@ from kuegi_bot.utils.trading_classes import Order, Account, Bar, ExchangeInterfa
 
 class ByBitInterface(ExchangeInterface):
 
-    def __init__(self, settings, logger):
-        super().__init__(settings, logger)
+    def __init__(self, settings, logger,on_tick_callback=None):
+        super().__init__(settings,logger,on_tick_callback)
         self.symbol = settings.SYMBOL
         self.bybit = bybit.bybit(test=settings.IS_TEST,
                                  api_key=settings.API_KEY,
@@ -86,6 +86,7 @@ class ByBitInterface(ExchangeInterface):
 
     def socket_callback(self, topic):
         try:
+            gotTick= False
             msgs = self.ws.get_data(topic)
             while len(msgs) > 0:
                 if topic == 'order' or topic == 'stop_order':
@@ -151,9 +152,12 @@ class ByBitInterface(ExchangeInterface):
                                         break
                             elif b['start'] > self.bars[0]['start']:
                                 self.bars.insert(0, b)
+                                gotTick = True
                             # ignore old bars
                     else:
                         self.bars = msgs
+                        gotTick = True
+
                 elif topic == 'instrument_info.100ms.' + self.symbol:
                     obj = msgs
                     if 'update' in obj.keys():
@@ -163,6 +167,12 @@ class ByBitInterface(ExchangeInterface):
                 else:
                     self.logger.error('got unkown topic in callback: ' + topic)
                 msgs = self.ws.get_data(topic)
+
+            # new bars is handling directly in the messagecause we get a new one on each tick
+            if topic in ["order", "stop_order","execution"]:
+                gotTick = True
+            if gotTick and self.on_tick_callback is not None:
+                self.on_tick_callback()  # got something new
         except Exception as e:
             self.logger.error("error in socket data(%s): %s " % (topic, str(e)))
 

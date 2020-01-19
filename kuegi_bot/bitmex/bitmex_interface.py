@@ -9,8 +9,8 @@ from kuegi_bot.utils.trading_classes import Order, Account, Bar, ExchangeInterfa
 
 
 class BitmexInterface(ExchangeInterface):
-    def __init__(self,settings,logger):
-        super().__init__(settings,logger)
+    def __init__(self,settings,logger,on_tick_callback=None):
+        super().__init__(settings,logger,on_tick_callback)
         self.symbol = settings.SYMBOL
         self.bitmex= None
         self.bitmex = bitmex.BitMEX(settings= settings,logger= logger, symbol=self.symbol,
@@ -102,6 +102,9 @@ class BitmexInterface(ExchangeInterface):
                         if b.tstamp == self.h1Bars[i].tstamp:
                             self.h1Bars[i]= b
                             break
+
+        if self.on_tick_callback is not None and table in ["tradeBin1h", "order", "execution"]:
+            self.on_tick_callback()
 
     def get_bars(self,timeframe_minutes,start_offset_minutes)->List[Bar]:
         return process_low_tf_bars(self.h1Bars, timeframe_minutes, start_offset_minutes=start_offset_minutes)

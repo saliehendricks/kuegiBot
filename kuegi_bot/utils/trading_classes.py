@@ -189,10 +189,11 @@ def process_low_tf_bars(subbars: List[Bar], timeframe_minutes, start_offset_minu
 
 
 class ExchangeInterface(OrderInterface):
-    def __init__(self, settings, logger):
+    def __init__(self, settings, logger,on_tick_callback=None):
         self.settings = settings
         self.logger = logger
         self.symbol = None
+        self.on_tick_callback= on_tick_callback
 
         atexit.register(lambda: self.exit())
 

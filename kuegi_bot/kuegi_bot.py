@@ -103,16 +103,16 @@ class KuegiBot(TradingBot):
                     newPos.status = "pending" if not order.stop_triggered else "triggered"
                     self.open_positions[posId] = newPos
                     self.logger.warn("found unknown entry %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
-            if orderType == OrderType.SL and orderType == OrderType.TP:
+            if orderType in [OrderType.SL, OrderType.TP]:
                 matchedPos = False
                 for posId in remaining_pos_ids:
-                    # no matching order found
                     pos = self.open_positions[posId]
                     if (pos.status == "open") and pos.amount == -order.amount:
                         if posId in remaining_pos_ids:
                             remaining_pos_ids.remove(posId)
                         matchedPos = True
                         break
+                # no matching order found
                 if not matchedPos:
                     newPos = Position(id=posId, entry=None, amount=-order.amount,
                                       stop=order.stop_price, tstamp=bars[0].tstamp)

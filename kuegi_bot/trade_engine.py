@@ -17,6 +17,7 @@ class LiveTrading(OrderInterface):
     def __init__(self, settings, trading_bot: TradingBot):
         self.settings = settings
         self.id = self.settings.id
+        self.got_tick= False
 
         self.logger = log.setup_custom_logger(name=settings.id,
                                               log_level=settings.LOG_LEVEL,
@@ -24,9 +25,9 @@ class LiveTrading(OrderInterface):
                                               logToFile=settings.LOG_TO_FILE)
         self.exchange: ExchangeInterface = None
         if settings.EXCHANGE == 'bitmex':
-            self.exchange = BitmexInterface(settings=settings, logger=self.logger)
+            self.exchange = BitmexInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
         else:
-            self.exchange = ByBitInterface(settings=settings, logger=self.logger)
+            self.exchange = ByBitInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
 
         # Once exchange is created, register exit handler that will always cancel orders
         # on any error.
@@ -47,6 +48,9 @@ class LiveTrading(OrderInterface):
             self.bot.init(bars=self.bars, account=self.account, symbol=self.symbolInfo, unique_id=self.settings.id)
         else:
             self.alive = False
+
+    def on_tick(self):
+        self.got_tick= True
 
     def print_status(self):
         """Print the current status."""
@@ -92,8 +96,10 @@ class LiveTrading(OrderInterface):
                 self.account.open_orders.append(o)
             elif o.id in prevOpenIds:
                 self.logger.info(
-                    "order %s got %s @ %.1f" % (
-                        o.id, ("executed" if o.executed_amount != 0 else "canceled"), o.executed_price))
+                    "order %s got %s @ %s" % (
+                        o.id,
+                        ("executed" if o.executed_amount != 0 else "canceled"),
+                        ("%.1f" % o.executed_price) if o.executed_price is not None else None))
                 self.account.order_history.append(o)
 
     def update_bars(self):
@@ -147,6 +153,7 @@ class LiveTrading(OrderInterface):
 
     def handle_tick(self):
         try:
+            self.got_tick= False
             self.update_bars()
             self.update_account()
             self.bot.on_tick(self.bars, self.account)
@@ -157,14 +164,18 @@ class LiveTrading(OrderInterface):
             raise e
 
     def run_loop(self):
+        import time
+        last = 0
         while self.alive:
-            if not self.check_connection():
-                self.logger.error("Realtime data connection unexpectedly closed, exiting.")
-                self.exit()
-            else:
-                self.handle_tick()
+            if time.time() - last > self.settings.LOOP_INTERVAL or self.got_tick:
+                last= time.time()
+                if not self.check_connection():
+                    self.logger.error("Realtime data connection unexpectedly closed, exiting.")
+                    self.exit()
+                else:
+                    self.handle_tick()
 
-            sleep(self.settings.LOOP_INTERVAL)
+            sleep(0.5)
 
     def prepare_plot(self):
         self.logger.info("running timelines")

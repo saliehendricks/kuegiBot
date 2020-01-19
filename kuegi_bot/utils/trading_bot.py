@@ -76,10 +76,10 @@ class TradingBot:
     def generate_order_id(self, positionId: str, type: OrderType):
         if "_" in positionId:
             self.logger.warn("position id must not include '_' but does: " + positionId)
-        orderId = positionId + "_" + str(type)
+        orderId = positionId + "_" + str(type.name)
         if type == OrderType.SL or type == OrderType.TP:
-            orderId = orderId + "_" + str(
-                randint(0, 999))  # add random part to prevent conflicts if the order was canceled before
+            # add random part to prevent conflicts if the order was canceled before
+            orderId = orderId + "_" + str(randint(0, 999))
         return orderId
 
     @staticmethod
@@ -94,25 +94,36 @@ class TradingBot:
         id_parts = order_id.split("_")
         if len(id_parts) >= 2:
             type = id_parts[1]
-            if type == str(OrderType.ENTRY):
+            if type == str(OrderType.ENTRY.name):
                 return OrderType.ENTRY
-            elif type == str(OrderType.SL):
+            elif type == str(OrderType.SL.name):
                 return OrderType.SL
-            elif type == str(OrderType.TP):
+            elif type == str(OrderType.TP.name):
                 return OrderType.TP
         return None
 
     @staticmethod
     def full_pos_id(signalId: str, direction: PositionDirection):
-        return signalId + "-" + str(direction)
+        return signalId + "-" + str(direction.name)
+
+
+    @staticmethod
+    def split_pos_Id(posId: str):
+        parts = posId.split("-")
+        if len(parts) >= 2:
+            if parts[1] == str(PositionDirection.SHORT.name):
+                return [parts[0], PositionDirection.SHORT]
+            elif parts[1] == str(PositionDirection.LONG.name):
+                return [parts[0], PositionDirection.LONG]
+        return [posId,None]
 
     @staticmethod
     def get_other_direction_id(posId: str):
-        parts = posId.split("-")
-        if len(parts) >= 2:
-            parts[1] = str(
-                PositionDirection.LONG if parts[1] == str(PositionDirection.SHORT) else PositionDirection.SHORT)
-            return '-'.join(parts)
+        parts = TradingBot.split_pos_Id(posId)
+        if parts[1] is not None:
+            return TradingBot.full_pos_id(parts[0],
+                                          PositionDirection.LONG if parts[1] == PositionDirection.SHORT
+                                          else PositionDirection.SHORT)
         return None
 
     ############### handling of open orders
