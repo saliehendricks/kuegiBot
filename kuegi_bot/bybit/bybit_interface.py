@@ -110,7 +110,7 @@ class ByBitInterface(ExchangeInterface):
                             prev.execution_tstamp = datetime.utcnow().timestamp()
                         self.orders[order.exchange_id] = prev
 
-                        self.logger.debug("received order: %s\n from %s" % (str(order), str(o)))
+                        self.logger.debug("received order update: %s\n from %s" % (str(order), str(o)))
                 elif topic == 'execution':
                     # {'symbol': 'BTCUSD', 'side': 'Buy', 'order_id': '96319991-c6ac-4ad5-bdf8-a5a79b624951',
                     # 'exec_id': '22add7a8-bb15-585f-b068-3a8648f6baff', 'order_link_id': '', 'price': '7307.5',
@@ -123,7 +123,9 @@ class ByBitInterface(ExchangeInterface):
                             order.executed_amount = (exec['order_qty'] - exec['leaves_qty']) * sideMulti
                             if (order.executed_amount - order.amount) * sideMulti >= 0:
                                 order.active = False
-                            self.logger.debug("got order execution: %s -> \n %s" % (str(exec), str(order)))
+                            self.logger.info("got order execution: %s %.1f @ %.1f " % (
+                                                    exec['order_link_id'], exec['exec_qty'], exec['price']))
+
                 elif topic == 'position':
                     # {'user_id': 712961, 'symbol': 'BTCUSD', 'size': 1, 'side': 'Buy', 'position_value':
                     # '0.00013684', 'entry_price': '7307.80473546', 'liq_price': '6674', 'bust_price': '6643.5',
@@ -134,6 +136,8 @@ class ByBitInterface(ExchangeInterface):
                     # 'position_status': 'Normal', 'position_seq': 505770784}
                     for pos in msgs:
                         sizefac = -1 if pos["side"] == "Sell" else 1
+                        if self.positions[pos['symbol']].quantity != pos["size"] * sizefac:
+                            self.logger.info("position changed %.2f -> %.2f" %(self.positions[pos['symbol']].quantity,pos["size"] * sizefac))
                         self.positions[pos['symbol']] = AccountPosition(pos['symbol'],
                                                                         avgEntryPrice=float(pos["entry_price"]),
                                                                         quantity=pos["size"] * sizefac,
