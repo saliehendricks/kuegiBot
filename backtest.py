@@ -2,9 +2,8 @@ from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.utils.helper import load_bars, prepare_plot
 from kuegi_bot.utils import log
 from kuegi_bot.kuegi_channel import KuegiChannel
-from kuegi_bot.kuegi_bot import KuegiBot
-
-from typing import List
+from kuegi_bot.bots.kuegi_bot import KuegiBot
+from kuegi_bot.bots.sfp_bot import SfpBot
 
 logger = log.setup_custom_logger()
 
@@ -47,7 +46,7 @@ def runOpti(bars):
 
 
 bars_b = load_bars(30 * 12, 240,0,'bybit')
-bars_m = load_bars(30 * 48, 240,0,'bitmex')
+#bars_m = load_bars(30 * 24, 240,0,'bitmex')
 #backtest(bars)
 
 #bars1= load_bars(24)
@@ -55,7 +54,50 @@ bars_m = load_bars(30 * 48, 240,0,'bitmex')
 #bars3= process_low_tf_bars(m1_bars, 240, 120)
 #bars4= process_low_tf_bars(m1_bars, 240, 180)
 
+
 '''
+
+##### SFP 240
+
+bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
+             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             be_factor=1, min_wick_fac=0.1, min_swing_length=2,
+             init_stop_type=1, tp_fac=20
+             )
+
+BackTest(bot, bars_b).run()
+
+bot.create_performance_plot().show()
+
+
+bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
+             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             be_factor=1, min_wick_fac=0.3, min_swing_length=2,
+             init_stop_type=0, tp_fac=25
+             )
+
+BackTest(bot, bars_m).run()
+
+bot.create_performance_plot().show()
+
+
+
+bybit 12: pos: 224 | profit: 21.66 | HH: 25.84 | maxDD: 22.96 | rel: 0.94 | UW days: 124.9
+
+             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             be_factor=1, min_wick_fac=0.1, min_swing_length=2,
+             init_stop_type=1, tp_fac=20
+             
+
+
+bitmex 24:  pos: 402 | profit: 74.82 | HH: 85.44 | maxDD: 29.01 | rel: 2.58 | UW days: 250.1
+
+             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             be_factor=1, min_wick_fac=0.3, min_swing_length=2,
+             init_stop_type=0, tp_fac=25
+
+
+############## Kuegi Bot
 
 bot=KuegiBot(logger=logger, directionFilter= 0,
     max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,
