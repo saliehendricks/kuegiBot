@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from typing import List
 from datetime import datetime
 
-from kuegi_bot.utils.trading_bot import TradingBot
+from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.utils.trading_classes import OrderInterface, Bar, Account, Order, Symbol
 from kuegi_bot.utils import log
 

@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from kuegi_bot.bitmex.bitmex_interface import BitmexInterface
 from kuegi_bot.bybit.bybit_interface import ByBitInterface
 from kuegi_bot.utils import log, errors
-from kuegi_bot.utils.trading_bot import TradingBot
+from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.utils.trading_classes import OrderInterface, Order, Account, Bar, Symbol, ExchangeInterface
 
 

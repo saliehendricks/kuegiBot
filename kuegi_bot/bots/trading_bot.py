@@ -71,6 +71,9 @@ class TradingBot:
                 self.logger.warn("Error loading open positions: " + str(e))
                 self.open_positions = {}
 
+        # init positions from existing orders
+        self.sync_positions_with_open_orders(bars, account)
+
     ############### ids of pos, signal and order
 
     def generate_order_id(self, positionId: str, type: OrderType):
@@ -138,6 +141,17 @@ class TradingBot:
                     del self.open_positions[positionId]
                 break
 
+    def position_got_opened(self,position:Position, bars:List[Bar],account:Account):
+        # empty hook for actual bot to maybe clear linked positions etc.
+        pass
+
+    def handle_opened_position(self,position:Position, order:Order, account:Account, bars:List[Bar]):
+        position.status = "open"
+        position.filled_entry = order.executed_price if order is not None else None
+        position.entry_tstamp = order.execution_tstamp if order is not None else bars[0].tstamp
+
+        self.position_got_opened(position,bars,account)
+
     def sync_executions(self, bars: List[Bar], account: Account):
         for order in account.order_history[self.known_order_history:]:
             if order.executed_amount == 0:
@@ -154,23 +168,7 @@ class TradingBot:
                 if orderType == OrderType.ENTRY and (
                         position.status == "pending" or position.status == "triggered"):
                     self.logger.info("position %s got opened" % position.id)
-                    position.status = "open"
-                    position.filled_entry = order.executed_price
-                    position.entry_tstamp = order.execution_tstamp
-                    # clear other side
-                    other_id = self.get_other_direction_id(position.id)
-                    if other_id in self.open_positions.keys():
-                        self.open_positions[other_id].markForCancel = bars[0].tstamp
-                    # add stop
-                    order = Order(orderId=self.generate_order_id(positionId=position.id,
-                                                                 type=OrderType.SL),
-                                  stop=position.initial_stop,
-                                  amount=-position.amount)
-                    self.order_interface.send_order(order)
-                    # added temporarily, cause sync with open orders is in the next loop and otherwise the orders vs
-                    # position check fails
-                    if order not in account.open_orders:  # outside world might have already added it
-                        account.open_orders.append(order)
+                    self.handle_opened_position(position=position,order=order,account=account,bars=bars)
 
                 elif (orderType == OrderType.SL or orderType == OrderType.TP) and position.status == "open":
                     self.logger.info("position %s got closed" % position.id)
@@ -189,8 +187,148 @@ class TradingBot:
         self.known_order_history = len(account.order_history)
         self.sync_positions_with_open_orders(bars, account)
 
-    def sync_positions_with_open_orders(self, bars: List[Bar], account: Account):
+    def got_data_for_position_sync(self, bars:List[Bar]):
         raise NotImplementedError
+
+    def get_stop_for_unmatched_amount(self, amount:float,bars:List[Bar]):
+        raise NotImplementedError
+
+    def sync_positions_with_open_orders(self, bars: List[Bar], account: Account):
+        open_pos = 0
+        for pos in self.open_positions.values():
+            if pos.status == "open":
+                open_pos += pos.amount
+
+        if open_pos == account.open_position and len(self.open_positions) == len(account.open_orders):
+            # sounds legit, dont waste resources
+            return
+
+        self.logger.info("Has to start order/pos sync with %f vs. %f and %i va %i"
+                         % (open_pos, account.open_position, len(self.open_positions), len(account.open_orders)))
+
+        if not self.got_data_for_position_sync(bars):
+            self.logger.warn("got no initial data, can't sync positions")
+            return
+
+        remaining_pos_ids = []
+        remaining_pos_ids += self.open_positions.keys()
+        remaining_orders = []
+        remaining_orders += account.open_orders
+
+        for order in account.open_orders:
+            orderType = self.order_type_from_order_id(order.id)
+            if orderType is None:
+                remaining_orders.remove(order)
+                continue  # none of ours
+            posId = self.position_id_from_order_id(order.id)
+            if posId in self.open_positions.keys():
+                remaining_orders.remove(order)
+                if posId in remaining_pos_ids:
+                    remaining_pos_ids.remove(posId)
+
+        if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and open_pos == account.open_position:
+            self.logger.info("positions match, probably SL and TP")
+            return
+
+        renamed_position_keys = []
+        # now remaining orders and remaining positions contain the not matched ones
+        for order in remaining_orders:
+            orderType = self.order_type_from_order_id(order.id)
+            posId = self.position_id_from_order_id(order.id)
+            if orderType == OrderType.ENTRY:
+                # check for a matching position
+                matchedPos = False
+                for tempPosId in remaining_pos_ids:
+                    # no matching order found
+                    pos = self.open_positions[tempPosId]
+                    if (pos.status == "pending" or pos.status == "triggered") and pos.amount == order.amount and \
+                            pos.wanted_entry == order.stop_price:
+                        self.logger.info(
+                            "unmatched open order %s matched to position %s. adapted pos Id" % (order.id, pos.id))
+                        pos.id = posId  # this position now belongs to this order
+                        if tempPosId in remaining_pos_ids:
+                            remaining_pos_ids.remove(tempPosId)
+                        matchedPos = True
+                        break
+                if not matchedPos:
+                    # add position for unkown order
+                    stop = self.get_stop_for_unmatched_amount(order.amount)
+                    newPos = Position(id=posId,
+                                      entry=order.limit_price if order.limit_price is not None else order.stop_price,
+                                      amount=order.amount,
+                                      stop=stop,
+                                      tstamp=bars[0].tstamp)
+                    newPos.status = "pending" if not order.stop_triggered else "triggered"
+                    self.open_positions[posId] = newPos
+                    self.logger.warn("found unknown entry %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
+            if orderType in [OrderType.SL, OrderType.TP]:
+                matchedPos = False
+                if posId in renamed_position_keys:
+                    # already adapted by order side of exit
+                    continue
+
+                for tempPosId in remaining_pos_ids:
+                    pos = self.open_positions[tempPosId]
+                    if (pos.status == "open") and pos.amount == -order.amount:
+                        self.logger.info(
+                            "unmatched exit order %s matched to position %s. adapted pos Id" % (order.id, pos.id))
+                        pos.id = posId  # this position now belongs to this order
+                        renamed_position_keys.append(pos.id)
+                        if posId in remaining_pos_ids:
+                            remaining_pos_ids.remove(tempPosId)
+                        matchedPos = True
+                        break
+                # no matching order found
+                if not matchedPos:
+                    newPos = Position(id=posId, entry=None, amount=-order.amount,
+                                      stop=order.stop_price, tstamp=bars[0].tstamp)
+                    newPos.status = "open"
+                    self.open_positions[posId] = newPos
+                    renamed_position_keys.append(newPos.id)
+                    self.logger.warn("found unknown exit %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
+
+        self.logger.info("found " + str(len(self.open_positions)) + " existing positions on sync")
+
+        remainingPosition = account.open_position
+        for pos in self.open_positions.values():
+            if pos.status == "open":
+                remainingPosition -= pos.amount
+
+        for posId in remaining_pos_ids:
+            # no matching order found
+            pos = self.open_positions[posId]
+            if pos.status == "pending" or pos.status == "triggered":
+                # should have the opening order in the system, but doesn't
+                # not sure why: in doubt: not create wrong orders
+                if remainingPosition * pos.amount > 0 and abs(remainingPosition) > abs(pos.amount):
+                    # assume position was opened without us realizing (during downtime)
+                    self.handle_opened_position(pos,None,bars)
+                    remainingPosition -= pos.amount
+                else:
+                    pos.status = "missed"
+                    self.position_closed(pos, account)
+            elif pos.status == "open":
+                if remainingPosition*pos.amount > 0 and abs(remainingPosition) > abs(pos.amount):
+                    self.order_interface.send_order(
+                    Order(orderId=self.generate_order_id(posId, OrderType.SL), amount=-pos.amount,
+                          stop=pos.initial_stop))
+                    remainingPosition -= pos.amount
+            else:
+                self.position_closed(pos, account)
+
+        if remainingPosition != 0:
+            signalId = str(bars[1].tstamp) + '+' + str(randint(0, 99))
+            posId = self.full_pos_id(signalId,
+                                     PositionDirection.LONG if remainingPosition > 0 else PositionDirection.SHORT)
+            newPos = Position(id=posId, entry=None, amount=remainingPosition,
+                              stop=self.get_stop_for_unmatched_amount(remainingPosition,bars), tstamp=bars[0].tstamp)
+            newPos.status = "open"
+            self.open_positions[posId] = newPos
+            # add stop
+            self.order_interface.send_order(Order(orderId=self.generate_order_id(posId, OrderType.SL),
+                                                  stop=newPos.initial_stop, amount=-newPos.amount))
+            self.logger.info(
+                "couldn't account for " + str(newPos.amount) + " open contracts. Added position with stop for it")
 
     #####################################################
 

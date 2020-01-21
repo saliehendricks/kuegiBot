@@ -5,7 +5,7 @@ import threading
 from time import sleep
 from typing import List
 
-from kuegi_bot.kuegi_bot import KuegiBot
+from kuegi_bot.bots.kuegi_bot import KuegiBot
 from kuegi_bot.trade_engine import LiveTrading
 from kuegi_bot.utils import log
 from kuegi_bot.utils.dotdict import dotdict

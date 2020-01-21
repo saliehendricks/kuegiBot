@@ -1,14 +1,10 @@
 from kuegi_bot.trade_engine import TradingBot
-from kuegi_bot.utils.trading_bot import PositionDirection
-from kuegi_bot.utils.trading_classes import Position, OrderInterface, Order, Account, Bar, Symbol, OrderType
+from kuegi_bot.bots.trading_bot import PositionDirection
+from kuegi_bot.utils.trading_classes import Position, Order, Account, Bar, Symbol, OrderType
 from kuegi_bot.kuegi_channel import KuegiChannel, Data, clean_range
-from kuegi_bot.utils import log
 import plotly.graph_objects as go
-
 import math
-
 from typing import List
-
 from datetime import datetime
 
 
@@ -50,118 +46,7 @@ class KuegiBot(TradingBot):
     def min_bars_needed(self):
         return self.channel.max_look_back + 1
 
-    def sync_positions_with_open_orders(self, bars: List[Bar], account: Account):
-        open_pos = 0
-        for pos in self.open_positions.values():
-            if pos.status == "open":
-                open_pos += pos.amount
-
-        if open_pos == account.open_position and len(self.open_positions) == len(account.open_orders):
-            # sounds legit, dont waste resources
-            return
-
-        self.logger.info("Has to start order/pos sync with %f vs. %f and %i va %i"
-                         % (open_pos, account.open_position, len(self.open_positions), len(account.open_orders)))
-        remainingPosition = account.open_position
-
-        remaining_pos_ids = []
-        remaining_pos_ids += self.open_positions.keys()
-        data: Data = self.channel.get_data(bars[1])
-
-        if data is None:
-            self.logger.warn("got no data from channel, can't adapt positions")
-            return
-        else:
-            stopLong = int(max(data.shortSwing, data.longTrail) if data.shortSwing is not None else data.longTrail)
-            stopShort = int(min(data.longSwing, data.shortTrail) if data.longSwing is not None else data.shortTrail)
-
-        for order in account.open_orders:
-            orderType = self.order_type_from_order_id(order.id)
-            if orderType is None:
-                continue  # none of ours
-            posId = self.position_id_from_order_id(order.id)
-            if posId in self.open_positions.keys():
-                if posId in remaining_pos_ids:
-                    remaining_pos_ids.remove(posId)
-                continue  # will be handled in update open_orders
-            if orderType == OrderType.ENTRY:
-                # check for a matching position
-                matchedPos = False
-                for posId in remaining_pos_ids:
-                    # no matching order found
-                    pos = self.open_positions[posId]
-                    if (pos.status == "pending" or pos.status == "triggered") and pos.amount == order.amount and \
-                            pos.wanted_entry == order.stop_price:
-                        if posId in remaining_pos_ids:
-                            remaining_pos_ids.remove(posId)
-                        matchedPos = True
-                        break
-                if not matchedPos and data is not None:
-                    # should have the opening order in the system, but doesn't
-                    newPos = Position(id=posId, entry=order.stop_price, amount=order.amount,
-                                      stop=(stopLong if order.amount > 0 else stopShort), tstamp=bars[0].tstamp)
-                    newPos.status = "pending" if not order.stop_triggered else "triggered"
-                    self.open_positions[posId] = newPos
-                    self.logger.warn("found unknown entry %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
-            if orderType in [OrderType.SL, OrderType.TP]:
-                matchedPos = False
-                for posId in remaining_pos_ids:
-                    pos = self.open_positions[posId]
-                    if (pos.status == "open") and pos.amount == -order.amount:
-                        if posId in remaining_pos_ids:
-                            remaining_pos_ids.remove(posId)
-                        matchedPos = True
-                        break
-                # no matching order found
-                if not matchedPos:
-                    newPos = Position(id=posId, entry=None, amount=-order.amount,
-                                      stop=order.stop_price, tstamp=bars[0].tstamp)
-                    newPos.status = "open"
-                    self.open_positions[posId] = newPos
-                    self.logger.warn("found unknown exit %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
-
-        self.logger.info("found " + str(len(self.open_positions)) + " existing positions on sync")
-
-        for pos in self.open_positions.values():
-            if pos.status == "open":
-                remainingPosition -= pos.amount
-
-        for posId in remaining_pos_ids:
-            # no matching order found
-            pos = self.open_positions[posId]
-            if pos.status == "pending" or pos.status == "triggered":
-                # should have the opening order in the system, but doesn't
-                if (pos.wanted_entry - bars[0].close) * pos.amount > 0:  # not triggered yet, add stop
-                    self.order_interface.send_order(Order(orderId=self.generate_order_id(posId, OrderType.ENTRY),
-                                                          amount=pos.amount,
-                                                          stop=pos.wanted_entry))
-                else:
-                    self.logger.warn("missed entry for pending position, but couldn't add cause market moved already")
-                    pos.status = "missed"
-                    super().position_closed(pos, account)
-            elif pos.status == "open":
-                self.order_interface.send_order(
-                    Order(orderId=self.generate_order_id(posId, OrderType.SL), amount=-pos.amount,
-                          stop=pos.initial_stop))
-            else:
-                super().position_closed(pos, account)
-
-        if remainingPosition != 0:
-            signalId = str(bars[1].tstamp + 13)
-            posId = self.full_pos_id(signalId,
-                                     PositionDirection.LONG if remainingPosition > 0 else PositionDirection.SHORT)
-            newPos = Position(id=posId, entry=None, amount=remainingPosition,
-                              stop=(stopLong if remainingPosition > 0 else stopShort), tstamp=bars[0].tstamp)
-            newPos.status = "open"
-            self.open_positions[posId] = newPos
-            # add stop
-            self.order_interface.send_order(Order(orderId=self.generate_order_id(posId, OrderType.SL),
-                                                  stop=newPos.initial_stop, amount=-newPos.amount))
-            self.logger.info(
-                "couldn't account for " + str(newPos.amount) + " open contracts. Added position with stop for it")
-
     def init(self, bars: List[Bar], account: Account, symbol: Symbol, unique_id: str = ""):
-        super().init(bars, account, symbol, unique_id)
         self.logger.info("started %s with %i %.1f %.3f %.1f %i %.0f %.1f %.3f %.1f %i %.1f %i %.1f %s %s %s %s %s" %
                          (unique_id,
                           self.channel.max_look_back, self.channel.threshold_factor, self.channel.buffer_factor,
@@ -171,18 +56,37 @@ class KuegiBot(TradingBot):
                           self.bars_till_cancel_triggered, self.be_factor, self.allow_trail_back,
                           self.stop_entry, self.trail_to_swing, self.delayed_entry, self.delayed_cancel))
         self.channel.on_tick(bars)
-        # init positions from existing orders
-        data: Data = self.channel.get_data(bars[1])
+        super().init(bars, account, symbol, unique_id)
 
-        if data is None:
-            self.logger.warn("got no data from channel on init, can't init existing positions")
-            return
-
-        self.sync_positions_with_open_orders(bars, account)
 
     def prep_bars(self, bars: list):
         if self.is_new_bar:
             self.channel.on_tick(bars)
+
+    def position_got_opened(self, position:Position, bars:List[Bar],account:Account):
+        other_id = self.get_other_direction_id(position.id)
+        if other_id in self.open_positions.keys():
+            self.open_positions[other_id].markForCancel = bars[0].tstamp
+
+        # add stop
+        order = Order(orderId=self.generate_order_id(positionId=position.id,
+                                                     type=OrderType.SL),
+                      stop=position.initial_stop,
+                      amount=-position.amount)
+        self.order_interface.send_order(order)
+        # added temporarily, cause sync with open orders is in the next loop and otherwise the orders vs
+        # position check fails
+        if order not in account.open_orders:  # outside world might have already added it
+            account.open_orders.append(order)
+
+    def got_data_for_position_sync(self, bars:List[Bar]):
+        return self.channel.get_data(bars[1]) is not None
+
+    def get_stop_for_unmatched_amount(self, amount:float,bars:List[Bar]):
+        data= self.channel.get_data(bars[1])
+        stopLong = int(max(data.shortSwing, data.longTrail) if data.shortSwing is not None else data.longTrail)
+        stopShort = int(min(data.longSwing, data.shortTrail) if data.longSwing is not None else data.shortTrail)
+        return (stopLong if amount > 0 else stopShort)
 
     def manage_open_orders(self, bars: List[Bar], account: Account):
         self.sync_executions(bars, account)
@@ -253,7 +157,7 @@ class KuegiBot(TradingBot):
                     continue
                 pos = self.open_positions[posId]
                 orderType = self.order_type_from_order_id(order.id)
-                if orderType == OrderType.SL or orderType == OrderType.TP:
+                if orderType == OrderType.SL:
                     # trail
                     newStop = order.stop_price
                     if order.amount < 0:

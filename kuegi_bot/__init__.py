@@ -17,7 +17,7 @@ def run():
     else:
         # import kuegi_bot here rather than at the top because it depends on live.json existing
         try:
-            from kuegi_bot.kuegi_bot import KuegiBot
+            from kuegi_bot.bots.kuegi_bot import KuegiBot
             from kuegi_bot.trade_engine import LiveTrading
 
             settings= {}
