@@ -217,7 +217,7 @@ class BackTest(OrderInterface):
             should_execute = True
             for subbar in reversed(next_bar.subbars):
                 # check open orders & update account
-                should_execute = self.handle_open_orders(subbar) or should_execute
+                should_execute = self.handle_open_orders(subbar) or should_execute or True
                 forming_bar.add_subbar(subbar)
                 if should_execute:
                     self.bot.on_tick(self.current_bars, self.account)
@@ -238,16 +238,16 @@ class BackTest(OrderInterface):
                     + " | profit: " + ("%.2f" % (100 * profit / self.initialEquity))
                     + " | HH: " + ("%.2f" % (100 * (self.hh / self.initialEquity - 1)))
                     + " | maxDD: " + ("%.2f" % (100 * self.maxDD / self.initialEquity))
-                    + " | rel: " + ("%.2f" % (profit / self.maxDD))
+                    + " | rel: " + ("%.2f" % (profit / (self.maxDD if self.maxDD > 0 else 1)))
                     + " | UW days: " + ("%.1f" % (self.max_underwater / uw_updates_per_day)))
 
         self.write_results_to_files()
         return self
 
     def prepare_plot(self):
-
+        barcenter= (self.bars[0].tstamp - self.bars[1].tstamp)/2
         logger.info("running timelines")
-        time = list(map(lambda b: datetime.fromtimestamp(b.tstamp), self.bars))
+        time = list(map(lambda b: datetime.fromtimestamp(b.tstamp+barcenter), self.bars))
         open = list(map(lambda b: b.open, self.bars))
         high = list(map(lambda b: b.high, self.bars))
         low = list(map(lambda b: b.low, self.bars))

@@ -60,41 +60,55 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 ##### SFP 240
 
 bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
-             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             be_factor=1, min_wick_fac=0.1, min_swing_length=2,
-             init_stop_type=1, tp_fac=20
+             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             init_stop_type=2, tp_fac=10, be_factor=1, be_buffer= 0.4,
+             min_wick_fac=0.3, min_swing_length=11,
+             range_length = 70, range_filter_fac= 0,
+             close_on_opposite= False,
+             max_risk_mul=2, risk_type= 0
              )
 
-BackTest(bot, bars_b).run()
+b= BackTest(bot, bars_b).run()
 
+b.prepare_plot().show()
 bot.create_performance_plot().show()
 
 
 bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
-             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             be_factor=1, min_wick_fac=0.3, min_swing_length=2,
-             init_stop_type=0, tp_fac=25
+             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             init_stop_type=2, tp_fac=25, be_factor=1, be_buffer= 0.4,
+             min_wick_fac=0.3, min_swing_length=2,
+             range_length = 20, range_filter_fac= 0,
+             close_on_opposite= False,
+             max_risk_mul=2, risk_type= 0          
              )
 
 BackTest(bot, bars_m).run()
 
+b.prepare_plot().show()
 bot.create_performance_plot().show()
 
 
 
-bybit 12: pos: 224 | profit: 21.66 | HH: 25.84 | maxDD: 22.96 | rel: 0.94 | UW days: 124.9
+bybit 12:  pos: 103 | profit: 44.31 | HH: 44.31 | maxDD: 10.34 | rel: 4.29 | UW days: 87.9
 
-             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             be_factor=1, min_wick_fac=0.1, min_swing_length=2,
-             init_stop_type=1, tp_fac=20
+             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             init_stop_type=2, tp_fac=10, be_factor=1, be_buffer= 0.4,
+             min_wick_fac=0.3, min_swing_length=11,
+             range_length = 70, range_filter_fac= 0,
+             close_on_opposite= False,
+             max_risk_mul=2, risk_type= 0
              
 
 
-bitmex 24:  pos: 402 | profit: 74.82 | HH: 85.44 | maxDD: 29.01 | rel: 2.58 | UW days: 250.1
+bitmex 24:  pos: 631 | profit: 73.22 | HH: 82.91 | maxDD: 19.61 | rel: 3.73 | UW days: 158.2
 
-             max_look_back=21, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             be_factor=1, min_wick_fac=0.3, min_swing_length=2,
-             init_stop_type=0, tp_fac=25
+             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
+             init_stop_type=2, tp_fac=25, be_factor=1, be_buffer= 0.4,
+             min_wick_fac=0.3, min_swing_length=2,
+             range_length = 20, range_filter_fac= 0,
+             close_on_opposite= False,
+             max_risk_mul=2, risk_type= 0   
 
 
 ############## Kuegi Bot
