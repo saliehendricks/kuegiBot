@@ -18,7 +18,8 @@ class SfpBot(TradingBot):
                  be_factor: float = 1, be_buffer: float= 0.1, tp_fac: float = 0, init_stop_type: int = 0,
                  min_wick_fac: float = 0.2, min_swing_length: int = 2,
                  range_length: int = 50, range_filter_fac: float = 0,
-                 close_on_opposite: bool = False, risk_type:int= 0, max_risk_mul:float = 2):
+                 close_on_opposite: bool = False, risk_type:int= 0, max_risk_mul:float = 2,
+                 entries:int = 0):
         super().__init__(logger, directionFilter)
         self.channel = KuegiChannel(max_look_back, threshold_factor, buffer_factor, max_dist_factor, max_swing_length)
         self.be_factor = be_factor
@@ -33,6 +34,7 @@ class SfpBot(TradingBot):
         self.close_on_opposite = close_on_opposite
         self.risk_type= risk_type
         self.max_risk_mul= max_risk_mul
+        self.entries = entries
 
     def uid(self) -> str:
         return "SFP"
@@ -85,22 +87,24 @@ class SfpBot(TradingBot):
                 if order.amount < 0:  # long position
                     if self.is_new_bar and newStop < stopLong:
                         newStop = int(stopLong)
+                    entry_diff= (pos.wanted_entry - pos.initial_stop)
                     if self.be_factor > 0 and \
                             pos.wanted_entry is not None and \
                             pos.initial_stop is not None and \
-                            bars[0].high > pos.wanted_entry + (pos.wanted_entry - pos.initial_stop) * self.be_factor \
+                            bars[0].high > pos.wanted_entry + entry_diff * self.be_factor \
                             and newStop < pos.wanted_entry + 1:
                         newStop = pos.wanted_entry + data.atr*self.be_buffer# make fees and bit of slipage
 
                 if order.amount > 0:
                     if self.is_new_bar and newStop > stopShort:
                         newStop = int(stopShort)
+                    entry_diff= (pos.initial_stop - pos.wanted_entry)
                     if self.be_factor > 0 and \
                             pos.wanted_entry is not None and \
                             pos.initial_stop is not None and \
-                            bars[0].low < pos.wanted_entry + (pos.wanted_entry - pos.initial_stop) * self.be_factor \
+                            bars[0].low < pos.wanted_entry - entry_diff * self.be_factor \
                             and newStop > pos.wanted_entry - 1:
-                        newStop = pos.wanted_entry - data.atr*self.be_buffer # make fees and bit of slipage
+                        newStop = pos.wanted_entry - entry_diff*self.be_buffer # make fees and bit of slipage
 
                 if newStop != order.stop_price:
                     order.stop_price = newStop
@@ -187,8 +191,8 @@ class SfpBot(TradingBot):
         signalId = str(bars[0].tstamp)
 
         # SHORT
-        longSFP = gotHighSwing and bars[1].close < swingHigh
-        longRej = bars[1].high > hh > bars[1].close and highSupreme > maxLength / 2 \
+        longSFP = self.entries != 1 and gotHighSwing and bars[1].close+data.buffer < swingHigh
+        longRej = self.entries != 2 and bars[1].high > hh > bars[1].close+data.buffer and highSupreme > maxLength / 2 \
                   and bars[1].high - bars[1].close > (bars[1].high-bars[1].low)/2
         if (longSFP or longRej) and (bars[1].high - bars[1].close) > atr * self.min_wick_fac \
                 and self.directionFilter <= 0 and bars[1].high > rangeMedian + atr * self.range_filter_fac:
@@ -224,8 +228,8 @@ class SfpBot(TradingBot):
             self.open_positions[posId] = Position(id=posId, entry=entry, amount=amount, stop=stop,
                                                   tstamp=bars[0].tstamp)
         # LONG
-        shortSFP = gotLowSwing and bars[1].close > swingLow
-        shortRej= bars[1].low < ll < bars[1].close and lowSupreme > maxLength / 2\
+        shortSFP = self.entries != 1 and gotLowSwing and bars[1].close-data.buffer > swingLow
+        shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close-data.buffer and lowSupreme > maxLength / 2\
                   and bars[1].close - bars[1].low > (bars[1].high-bars[1].low)/2
         if (shortSFP or shortRej) and (bars[1].close - bars[1].low) > atr * self.min_wick_fac \
                 and self.directionFilter >= 0 and bars[1].low < rangeMedian - self.range_filter_fac:

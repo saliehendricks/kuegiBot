@@ -61,8 +61,8 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 
 bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
              max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             init_stop_type=2, tp_fac=10, be_factor=1, be_buffer= 0.4,
-             min_wick_fac=0.3, min_swing_length=11,
+             init_stop_type=1, tp_fac=10, be_factor=1, be_buffer= 0.3,
+             min_wick_fac=0.5, min_swing_length=11,
              range_length = 70, range_filter_fac= 0,
              close_on_opposite= False,
              max_risk_mul=2, risk_type= 0
@@ -79,36 +79,35 @@ bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
              init_stop_type=2, tp_fac=25, be_factor=1, be_buffer= 0.4,
              min_wick_fac=0.3, min_swing_length=2,
              range_length = 20, range_filter_fac= 0,
-             close_on_opposite= False,
+             close_on_opposite= False,entries=1,
              max_risk_mul=2, risk_type= 0          
              )
 
-BackTest(bot, bars_m).run()
+b=BackTest(bot, bars_m).run()
 
 b.prepare_plot().show()
 bot.create_performance_plot().show()
 
 
-
-bybit 12:  pos: 103 | profit: 44.31 | HH: 44.31 | maxDD: 10.34 | rel: 4.29 | UW days: 87.9
+bybit 12:  pos: 98 | profit: 48.17 | HH: 48.17 | maxDD: 9.56 | rel: 4.81 | UW days: 87.9
 
              max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             init_stop_type=2, tp_fac=10, be_factor=1, be_buffer= 0.4,
-             min_wick_fac=0.3, min_swing_length=11,
+             init_stop_type=1, tp_fac=10, be_factor=1, be_buffer= 0.3,
+             min_wick_fac=0.5, min_swing_length=11,
              range_length = 70, range_filter_fac= 0,
              close_on_opposite= False,
              max_risk_mul=2, risk_type= 0
              
 
 
-bitmex 24:  pos: 631 | profit: 73.22 | HH: 82.91 | maxDD: 19.61 | rel: 3.73 | UW days: 158.2
+bitmex 24:  pos: 342 | profit: 92.20 | HH: 99.56 | maxDD: 18.72 | rel: 2.47 | UW days: 172.1
 
              max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
              init_stop_type=2, tp_fac=25, be_factor=1, be_buffer= 0.4,
              min_wick_fac=0.3, min_swing_length=2,
              range_length = 20, range_filter_fac= 0,
-             close_on_opposite= False,
-             max_risk_mul=2, risk_type= 0   
+             close_on_opposite= False,entries=1,
+             max_risk_mul=2, risk_type= 0          
 
 
 ############## Kuegi Bot

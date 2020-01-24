@@ -234,11 +234,14 @@ class BackTest(OrderInterface):
 
         profit = self.account.equity - self.initialEquity
         uw_updates_per_day = 1440  # every minute
+        total_days= (self.bars[0].tstamp - self.bars[-1].tstamp)/(60*60*24)
+        rel= profit / (self.maxDD if self.maxDD > 0 else 1)
+        rel_per_year = rel / (total_days/365)
         logger.info("finished | pos: " + str(len(self.bot.position_history))
                     + " | profit: " + ("%.2f" % (100 * profit / self.initialEquity))
                     + " | HH: " + ("%.2f" % (100 * (self.hh / self.initialEquity - 1)))
                     + " | maxDD: " + ("%.2f" % (100 * self.maxDD / self.initialEquity))
-                    + " | rel: " + ("%.2f" % (profit / (self.maxDD if self.maxDD > 0 else 1)))
+                    + " | rel: " + ("%.2f" % (rel_per_year))
                     + " | UW days: " + ("%.1f" % (self.max_underwater / uw_updates_per_day)))
 
         self.write_results_to_files()
