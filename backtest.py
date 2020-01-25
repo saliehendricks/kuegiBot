@@ -47,7 +47,9 @@ def runOpti(bars):
 
 bars_b = load_bars(30 * 12, 240,0,'bybit')
 #bars_m = load_bars(30 * 24, 240,0,'bitmex')
-#backtest(bars)
+
+#bars_b = load_bars(30 * 12, 60,0,'bybit')
+#bars_m = load_bars(30 * 24, 60,0,'bitmex')
 
 #bars1= load_bars(24)
 #bars2= process_low_tf_bars(m1_bars, 240, 60)
