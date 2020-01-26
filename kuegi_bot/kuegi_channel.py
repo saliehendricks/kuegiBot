@@ -35,6 +35,15 @@ class Data:
 
 
 class KuegiChannel(Indicator):
+    ''' calculates trails and swings
+    if the price makes a strong move the trail goes to the start of the move.
+    there is also a max dist for the trail from the neg.extr of the last X bars
+
+    swings must be confirmed by 2 bars before and 1 bar after the swing.
+
+    a strong move resets the swings. the bar of the move is never considered a swing point
+
+    '''
     def __init__(self, max_look_back: int = 15, threshold_factor: float = 0.9, buffer_factor: float = 0.05,
                  max_dist_factor: float = 2, max_swing_length: int = 3):
         super().__init__(

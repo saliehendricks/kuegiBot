@@ -16,7 +16,7 @@ class KuegiBot(TradingBot):
                  max_channel_size_factor: float = 6, min_channel_size_factor: float = 0,
                  risk_factor: float = 0.01, max_risk_mul: float = 2, risk_type: int = 0,
                  entry_tightening=0, bars_till_cancel_triggered=3,
-                 be_factor: float = 0, allow_trail_back: bool = False,
+                 be_factor: float = 0, be_buffer: float= 0.1,  allow_trail_back: bool = False,
                  stop_entry: bool = False, trail_to_swing: bool = False, delayed_entry: bool = True,
                  delayed_cancel: bool = False):
         super().__init__(logger, directionFilter)
@@ -35,6 +35,7 @@ class KuegiBot(TradingBot):
         self.bars_till_cancel_triggered = bars_till_cancel_triggered
         self.delayed_cancel = delayed_cancel
         self.be_factor = be_factor
+        self.be_buffer = be_buffer
         self.allow_trail_back = allow_trail_back
         self.risk_type = risk_type  # 0= all equal, 1= 1 atr eq 1 R
         self.max_dist_factor = max_dist_factor
@@ -165,24 +166,26 @@ class KuegiBot(TradingBot):
                                                 (self.allow_trail_back and
                                                  pos is not None and stopLong > pos.initial_stop)):
                             newStop = int(stopLong)
+                        entry_diff= (pos.wanted_entry - pos.initial_stop)
                         if self.be_factor > 0 and \
                                 pos.wanted_entry is not None and \
                                 pos.initial_stop is not None and \
-                                bars[0].high > pos.wanted_entry + (pos.wanted_entry - pos.initial_stop) * self.be_factor \
+                                bars[0].high > pos.wanted_entry + entry_diff * self.be_factor \
                                 and newStop < pos.wanted_entry + 1:
-                            newStop = pos.wanted_entry + 1
+                            newStop = pos.wanted_entry + entry_diff*self.be_buffer
 
                     if order.amount > 0:
                         if self.is_new_bar and (newStop > stopShort or
                                                 (self.allow_trail_back and
                                                  pos is not None and stopShort < pos.initial_stop)):
                             newStop = int(stopShort)
+                        entry_diff= (pos.wanted_entry - pos.initial_stop)
                         if self.be_factor > 0 and \
                                 pos.wanted_entry is not None and \
                                 pos.initial_stop is not None and \
-                                bars[0].low < pos.wanted_entry + (pos.wanted_entry - pos.initial_stop) * self.be_factor \
+                                bars[0].low < pos.wanted_entry + entry_diff * self.be_factor \
                                 and newStop > pos.wanted_entry - 1:
-                            newStop = pos.wanted_entry - 1
+                            newStop = pos.wanted_entry +entry_diff*self.be_buffer
 
                     if newStop != order.stop_price:
                         order.stop_price = newStop
