@@ -216,7 +216,7 @@ class BackTest(OrderInterface):
             should_execute = True
             for subbar in reversed(next_bar.subbars):
                 # check open orders & update account
-                should_execute = self.handle_open_orders(subbar) or should_execute or True
+                should_execute = self.handle_open_orders(subbar) or should_execute or True # always execute cause of BE
                 forming_bar.add_subbar(subbar)
                 if should_execute:
                     self.bot.on_tick(self.current_bars, self.account)
