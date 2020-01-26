@@ -36,6 +36,10 @@ class TradingBot:
     def uid(self) -> str:
         return self.myId
 
+    def prepare(self,logger, order_interface):
+        self.logger = logger
+        self.order_interface= order_interface
+
     def min_bars_needed(self):
         return 5
 
@@ -77,9 +81,10 @@ class TradingBot:
 
     ############### ids of pos, signal and order
 
-    def generate_order_id(self, positionId: str, type: OrderType):
+    @staticmethod
+    def generate_order_id( positionId: str, type: OrderType):
         if "_" in positionId:
-            self.logger.warn("position id must not include '_' but does: " + positionId)
+            print("position id must not include '_' but does: " + positionId)
         orderId = positionId + "_" + str(type.name)
         if type == OrderType.SL or type == OrderType.TP:
             # add random part to prevent conflicts if the order was canceled before
@@ -108,6 +113,8 @@ class TradingBot:
 
     @staticmethod
     def full_pos_id(signalId: str, direction: PositionDirection):
+        if "-" in signalId:
+            print("signal id must not include '-' but does: " + signalId)
         return signalId + "-" + str(direction.name)
 
 

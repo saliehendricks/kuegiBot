@@ -35,8 +35,7 @@ class BackTest(OrderInterface):
     def __init__(self, bot: TradingBot, bars: list):
         self.bars: List[Bar] = bars
         self.bot = bot
-        self.bot.order_interface = self
-        self.bot.logger = SilentLogger()
+        self.bot.prepare(SilentLogger(),self)
 
         self.market_slipage_percent = 0.15
         self.maker_fee = -0.00025

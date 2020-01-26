@@ -1,4 +1,6 @@
 from kuegi_bot.backtest_engine import BackTest
+from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
+from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.utils.helper import load_bars, prepare_plot
 from kuegi_bot.utils import log
 from kuegi_bot.kuegi_channel import KuegiChannel
@@ -18,14 +20,7 @@ def plot(bars):
     fig.show()
 
 def backtest(bars):
-    bots= [KuegiBot(max_look_back=13, threshold_factor=3, buffer_factor=0.1,
-                  max_dist_factor=1, max_swing_length=2,
-                  max_channel_size_factor=6, risk_factor=1000, entry_tightening=1,
-                  stop_entry=False, trail_to_swing=True, delayed_entry=True),
-           KuegiBot(max_look_back=13, threshold_factor=3, buffer_factor=0.1,
-                    max_dist_factor=1, max_swing_length=2,
-                    max_channel_size_factor=6, risk_factor=1000, entry_tightening=1,
-                    stop_entry=True, trail_to_swing=True, delayed_entry=True)]
+    bots= []
     for bot in bots:
         BackTest(bot,bars).run()
 
@@ -36,11 +31,8 @@ def runOpti(bars):
             params.append((mask & (1 << i)) != 0)
         logger.info(str(mask))
         bot=KuegiBot(logger=logger,
-            max_look_back=13, threshold_factor=0.9, buffer_factor=0.05,
-            max_dist_factor=2, max_swing_length=3,
-            max_channel_size_factor=6, risk_factor=0.1, entry_tightening=1, bars_till_cancel_triggered=5,
-            be_factor=2, allow_trail_back=params[0],
-            stop_entry=params[1], trail_to_swing=params[2], delayed_entry=params[3], delayed_cancel=params[4]
+            max_channel_size_factor=6, entry_tightening=1, bars_till_cancel_triggered=5,
+            stop_entry=params[1], delayed_entry=params[3], delayed_cancel=params[4]
         )
         BackTest(bot, bars).run()
 
@@ -55,6 +47,22 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 #bars2= process_low_tf_bars(m1_bars, 240, 60)
 #bars3= process_low_tf_bars(m1_bars, 240, 120)
 #bars4= process_low_tf_bars(m1_bars, 240, 180)
+
+strategy= KuegiStrategy(
+    min_channel_size_factor=0, max_channel_size_factor=16,
+    entry_tightening=1, bars_till_cancel_triggered=5,
+    stop_entry=True, delayed_entry=True, delayed_cancel=True)\
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
+    .withBE(factor=1, buffer=0.4)\
+    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
+
+bot=MultiStrategyBot(logger=logger, directionFilter= 0)
+bot.add_strategy(strategy)
+
+b= BackTest(bot, bars_b).run()
+
+bot.create_performance_plot().show()
 
 
 '''
@@ -73,8 +81,8 @@ bot = SfpBot(logger=logger, directionFilter=0,
 
 b= BackTest(bot, bars_b).run()
 
-b.prepare_plot().show()
 bot.create_performance_plot().show()
+b.prepare_plot().show()
 
 
 bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
@@ -92,7 +100,7 @@ b.prepare_plot().show()
 bot.create_performance_plot().show()
 
 
-bybit 12: pos: 98 | profit: 48.57 | HH: 48.57 | maxDD: 9.70 | rel: 4.78 | UW days: 87.9
+bybit 12: pos: 99 | profit: 40.61 | HH: 43.44 | maxDD: 9.55 | rel: 4.21 | UW days: 87.9
 
              init_stop_type=1, tp_fac=10,
              min_wick_fac=0.5, min_swing_length=11,
@@ -118,6 +126,22 @@ bitmex 24:  pos: 342 | profit: 92.20 | HH: 99.56 | maxDD: 18.72 | rel: 2.47 | UW
 ############## Kuegi Bot
 
 bot=KuegiBot(logger=logger, directionFilter= 0,
+    min_channel_size_factor=0, max_channel_size_factor=16, 
+    entry_tightening=1, bars_till_cancel_triggered=5,
+    stop_entry=True, delayed_entry=True, delayed_cancel=True)\
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
+    .withBE(factor=1, buffer=0.4)\
+    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
+    
+b=BackTest(bot, bars_b).run()
+
+b.prepare_plot().show()
+
+bot.create_performance_plot().show()
+
+
+bot=KuegiBot(logger=logger, directionFilter= 0,
     max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,
     max_dist_factor=1, max_swing_length=4,
     min_channel_size_factor=1.618, max_channel_size_factor=16, 
@@ -128,23 +152,10 @@ bot=KuegiBot(logger=logger, directionFilter= 0,
 )
 
 b=BackTest(bot, bars_m).run()
-b.prepare_plot().show()
 
 bot.create_performance_plot().show()
 
-bot=KuegiBot(logger=logger, directionFilter= 0,
-    min_channel_size_factor=0, max_channel_size_factor=16, 
-    entry_tightening=1, bars_till_cancel_triggered=5,
-    stop_entry=True, delayed_entry=True, delayed_cancel=True)\
-    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)\
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
-    .withBE(factor=1, buffer=0.4)\
-    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
-    
-b=BackTest(bot, bars_b).run()
 b.prepare_plot().show()
-
-bot.create_performance_plot().show()
 
 #'''
 
@@ -167,7 +178,7 @@ original: pos: 319 | profit: 39.17 | HH: 39.17 | maxDD: 30.71 | rel: 1.28 | UW d
 Bybit Opti:
     
 Fokus relation 
-12 mo bybit: pos: 178 | profit: 90.49 | HH: 99.85 | maxDD: 10.52 | rel: 8.22 | UW days: 38.9
+12 mo bybit: pos: 170 | profit: 96.11 | HH: 104.47 | maxDD: 10.52 | rel: 9.05 | UW days: 60.0
 12 mo bitmex: pos: 185 | profit: 0.15 | HH: 10.47 | maxDD: 31.43 | rel: 0.00 | UW days: 207.2
     min_channel_size_factor=0, max_channel_size_factor=16, 
     entry_tightening=1, bars_till_cancel_triggered=5,
