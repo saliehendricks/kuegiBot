@@ -192,7 +192,7 @@ class TradingBot:
         raise NotImplementedError
 
     def get_stop_for_unmatched_amount(self, amount:float,bars:List[Bar]):
-        raise NotImplementedError
+        return None
 
     def sync_positions_with_open_orders(self, bars: List[Bar], account: Account):
         open_pos = 0
@@ -254,14 +254,20 @@ class TradingBot:
                 if not matchedPos:
                     # add position for unkown order
                     stop = self.get_stop_for_unmatched_amount(order.amount)
-                    newPos = Position(id=posId,
+                    if stop is not None:
+                        newPos = Position(id=posId,
                                       entry=order.limit_price if order.limit_price is not None else order.stop_price,
                                       amount=order.amount,
                                       stop=stop,
                                       tstamp=bars[0].tstamp)
-                    newPos.status = "pending" if not order.stop_triggered else "triggered"
-                    self.open_positions[posId] = newPos
-                    self.logger.warn("found unknown entry %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
+                        newPos.status = "pending" if not order.stop_triggered else "triggered"
+                        self.open_positions[posId] = newPos
+                        self.logger.warn("found unknown entry %s %.1f @ %.1f, added position" % (order.id, order.amount, order.stop_price))
+                    else:
+                        self.logger.warn(
+                            "found unknown entry %s %.1f @ %.1f, canceling" % (order.id, order.amount, order.stop_price))
+                        self.order_interface.cancel_order(order)
+
             if orderType in [OrderType.SL, OrderType.TP]:
                 matchedPos = False
                 if posId in renamed_position_keys:
@@ -318,19 +324,24 @@ class TradingBot:
                 self.position_closed(pos, account)
 
         if remainingPosition != 0:
+            unmatched_stop= self.get_stop_for_unmatched_amount(remainingPosition,bars)
             signalId = str(bars[1].tstamp) + '+' + str(randint(0, 99))
-            posId = self.full_pos_id(signalId,
-                                     PositionDirection.LONG if remainingPosition > 0 else PositionDirection.SHORT)
-            newPos = Position(id=posId, entry=None, amount=remainingPosition,
-                              stop=self.get_stop_for_unmatched_amount(remainingPosition,bars), tstamp=bars[0].tstamp)
-            newPos.status = "open"
-            self.open_positions[posId] = newPos
-            # add stop
-            self.order_interface.send_order(Order(orderId=self.generate_order_id(posId, OrderType.SL),
-                                                  stop=newPos.initial_stop, amount=-newPos.amount))
-            self.logger.info(
-                "couldn't account for " + str(newPos.amount) + " open contracts. Added position with stop for it")
-
+            if unmatched_stop is not None:
+                posId = self.full_pos_id(signalId,
+                                         PositionDirection.LONG if remainingPosition > 0 else PositionDirection.SHORT)
+                newPos = Position(id=posId, entry=None, amount=remainingPosition,
+                                  stop=unmatched_stop, tstamp=bars[0].tstamp)
+                newPos.status = "open"
+                self.open_positions[posId] = newPos
+                # add stop
+                self.logger.info(
+                    "couldn't account for " + str(newPos.amount) + " open contracts. Adding position with stop for it")
+                self.order_interface.send_order(Order(orderId=self.generate_order_id(posId, OrderType.SL),
+                                                      stop=newPos.initial_stop, amount=-newPos.amount))
+            else:
+                self.logger.info(
+                    "couldn't account for " + str(remainingPosition) + " open contracts. Market close")
+                self.order_interface.send_order(Order(orderId=signalId+"_marketClose", amount=-remainingPosition))
     #####################################################
 
     def save_open_positions(self):
