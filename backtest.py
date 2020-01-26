@@ -1,5 +1,6 @@
 from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
+from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.utils.helper import load_bars, prepare_plot
 from kuegi_bot.utils import log
@@ -38,7 +39,7 @@ def runOpti(bars):
 
 
 bars_b = load_bars(30 * 12, 240,0,'bybit')
-#bars_m = load_bars(30 * 24, 240,0,'bitmex')
+bars_m = load_bars(30 * 24, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
 #bars_m = load_bars(30 * 24, 60,0,'bitmex')
@@ -48,19 +49,32 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 #bars3= process_low_tf_bars(m1_bars, 240, 120)
 #bars4= process_low_tf_bars(m1_bars, 240, 180)
 
-strategy= KuegiStrategy(
-    min_channel_size_factor=0, max_channel_size_factor=16,
-    entry_tightening=1, bars_till_cancel_triggered=5,
-    stop_entry=True, delayed_entry=True, delayed_cancel=True)\
-    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)\
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
-    .withBE(factor=1, buffer=0.4)\
-    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
-
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
-bot.add_strategy(strategy)
 
-b= BackTest(bot, bars_b).run()
+bot.add_strategy(KuegiStrategy(
+    min_channel_size_factor=1.618, max_channel_size_factor=16,
+    entry_tightening=0.1, bars_till_cancel_triggered=3,
+    stop_entry=True, delayed_entry=False, delayed_cancel=True)\
+    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
+    .withBE(factor=2, buffer=0.1)\
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
+                 )
+
+'''
+bot.add_strategy(SfpStrategy(
+             init_stop_type=1, tp_fac=10,
+             min_wick_fac=0.5, min_swing_length=11,
+             range_length=70, range_filter_fac=0,
+             close_on_opposite=False)
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+    .withBE(factor=1, buffer=0.3)
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
+                 )
+#'''
+
+b= BackTest(bot, bars_m).run()
 
 bot.create_performance_plot().show()
 
@@ -197,13 +211,15 @@ Fokus on Profit/DD:
 12 months: pos: 280 | profit: 109.04 | HH: 116.86 | maxDD: 16.86 | rel: 6.47 | UW days: 72.6
 24 months: pos: 565 | profit: 157.49 | HH: 176.51 | maxDD: 19.68 | rel: 8.00 | UW days: 72.6
 48 months: pos: 1145 | profit: 363.90 | HH: 371.72 | maxDD: 22.25 | rel: 16.35 | UW days: 72.6
-    max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,
-    max_dist_factor=1, max_swing_length=4,
+    
     min_channel_size_factor=1.618, max_channel_size_factor=16, 
-    risk_factor=1, max_risk_mul=3, risk_type= 0,
     entry_tightening=0.1, bars_till_cancel_triggered=3,
-    be_factor= 2, allow_trail_back= True,
-    stop_entry=True, trail_to_swing=False, delayed_entry=False, delayed_cancel=True
+    stop_entry=True, delayed_entry=False, delayed_cancel=True)\
+    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
+    .withBE(factor=2, buffer=0.1)\
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
+    
 
 
 low UW: 

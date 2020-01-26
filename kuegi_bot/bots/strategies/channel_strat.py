@@ -103,7 +103,7 @@ class ChannelStrategy(Strategy):
                         newStop = self.__trail_stop(direction=1 if isLong else -1,
                                                     current_stop=newStop,
                                                     trail=position.wanted_entry + entry_diff * self.be_buffer,
-                                                    initial_stop=position.initial_stop)
+                                                    initial_stop=position.initial_stop, only_forward= True)
                 if newStop != order.stop_price:
                     order.stop_price = newStop
                     to_update.append(order)
@@ -122,10 +122,11 @@ class ChannelStrategy(Strategy):
 
     ####################################
 
-    def __trail_stop(self, direction, current_stop, trail, initial_stop):
+    def __trail_stop(self, direction, current_stop, trail, initial_stop,only_forward= False):
         # direction should be > 0 for long and < 0 for short
         if (trail - current_stop) * direction > 0 or \
-                (self.trail_back and initial_stop is not None and (trail - initial_stop) * direction > 0):
+                (not only_forward and self.trail_back
+                 and initial_stop is not None and (trail - initial_stop) * direction > 0):
             return math.floor(trail) if direction < 0 else math.ceil(trail)
         else:
             return current_stop
