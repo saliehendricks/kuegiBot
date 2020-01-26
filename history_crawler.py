@@ -26,7 +26,7 @@ start= 1 if exchange == 'bybit' else 0
 offset= 0
 
 #init
-lastknown= 11 if exchange == 'bybit' else 44
+lastknown= 12 if exchange == 'bybit' else 45
 if lastknown >= 0:
     with open('history/'+exchange+'/M1_' + str(lastknown) + '.json', 'r') as file:
         result = json.load(file)

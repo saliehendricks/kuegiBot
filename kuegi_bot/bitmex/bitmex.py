@@ -133,38 +133,6 @@ class BitMEX(object):
     def delta(self):
         return self.position(self.symbol)['homeNotional']
 
-    @authentication_required
-    def buy(self, quantity, price):
-        """Place a buy order.
-
-        Returns order object. ID: orderID
-        """
-        return self.place_order(quantity, price)
-
-    @authentication_required
-    def sell(self, quantity, price):
-        """Place a sell order.
-
-        Returns order object. ID: orderID
-        """
-        return self.place_order(-quantity, price)
-
-    @authentication_required
-    def place_order(self, quantity, price):
-        """Place an order."""
-        if price < 0:
-            raise Exception("Price must be positive.")
-
-        endpoint = "order"
-        # Generate a unique clOrdID with our prefix so we can identify it.
-        clOrdID = self.orderIDPrefix + base64.b64encode(uuid.uuid4().bytes).decode('utf8').rstrip('=\n')
-        postdict = {
-            'symbol': self.symbol,
-            'orderQty': quantity,
-            'price': price,
-            'clOrdID': clOrdID
-        }
-        return self._curl_bitmex(path=endpoint, postdict=postdict, verb="POST")
 
     @authentication_required
     def amend_bulk_orders(self, orders):
@@ -345,6 +313,7 @@ class BitMEX(object):
             'orderQty': order.amount,
             'price': order.limit_price,
             'stopPx': order.stop_price,
+            'execInst': 'LastPrice',
             'clOrdID': order.id
         }
         return self._curl_bitmex(path=endpoint, postdict=postdict, verb="POST")
