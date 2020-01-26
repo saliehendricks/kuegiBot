@@ -273,7 +273,7 @@ class BackTest(OrderInterface):
         except Exception:
             pass
 
-        uid = str(int(datetime.utcnow().timestamp())) + '_' + str(len(self.bars))
+        uid = str(int(datetime.utcnow().timestamp())) + '_' + str(len(self.bot.position_history))
         tradesfilename = base + uid + '_trades.csv'
         logger.info("writing" + str(len(self.bot.position_history)) + " trades to file " + tradesfilename)
         with open(tradesfilename, 'w', newline='') as csvfile:

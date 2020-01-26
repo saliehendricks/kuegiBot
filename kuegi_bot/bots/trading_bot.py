@@ -19,6 +19,7 @@ class PositionDirection(Enum):
 
 class TradingBot:
     def __init__(self, logger, directionFilter: int = 0):
+        self.myId= "GenericBot"
         self.logger = logger
         self.directionFilter = directionFilter
         self.order_interface: OrderInterface = None
@@ -33,7 +34,7 @@ class TradingBot:
         self.reset()
 
     def uid(self) -> str:
-        return "GenericBot"
+        return self.myId
 
     def min_bars_needed(self):
         return 5

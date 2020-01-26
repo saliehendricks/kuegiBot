@@ -61,14 +61,15 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 
 ##### SFP 240
 
-bot = SfpBot(logger=logger, directionFilter=0, risk_factor=1,
-             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             init_stop_type=1, tp_fac=10, be_factor=1, be_buffer= 0.3,
+bot = SfpBot(logger=logger, directionFilter=0,
+             init_stop_type=1, tp_fac=10,
              min_wick_fac=0.5, min_swing_length=11,
-             range_length = 70, range_filter_fac= 0,
-             close_on_opposite= False,
-             max_risk_mul=2, risk_type= 0
-             )
+             range_length=70, range_filter_fac=0,
+             close_on_opposite=False)\
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0) \
+    .withBE(factor=1, buffer=0.3)\
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
 
 b= BackTest(bot, bars_b).run()
 
@@ -91,14 +92,16 @@ b.prepare_plot().show()
 bot.create_performance_plot().show()
 
 
-bybit 12:  pos: 98 | profit: 48.17 | HH: 48.17 | maxDD: 9.56 | rel: 4.81 | UW days: 87.9
+bybit 12: pos: 98 | profit: 48.57 | HH: 48.57 | maxDD: 9.70 | rel: 4.78 | UW days: 87.9
 
-             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             init_stop_type=1, tp_fac=10, be_factor=1, be_buffer= 0.3,
+             init_stop_type=1, tp_fac=10,
              min_wick_fac=0.5, min_swing_length=11,
-             range_length = 70, range_filter_fac= 0,
-             close_on_opposite= False,
-             max_risk_mul=2, risk_type= 0
+             range_length=70, range_filter_fac=0,
+             close_on_opposite=False)\
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0) \
+    .withBE(factor=1, buffer=0.3)\
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
              
 
 
@@ -129,16 +132,15 @@ b.prepare_plot().show()
 
 bot.create_performance_plot().show()
 
-
-bot=KuegiBot(logger=logger, directionFilter= 0, risk_factor=1,
-    max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,
-    max_dist_factor=2, max_swing_length=4,
+bot=KuegiBot(logger=logger, directionFilter= 0,
     min_channel_size_factor=0, max_channel_size_factor=16, 
-    max_risk_mul=2, risk_type= 1,
     entry_tightening=1, bars_till_cancel_triggered=5,
-    be_factor= 1, be_buffer= 0.4, allow_trail_back= False,
-    stop_entry=True, trail_to_swing=False, delayed_entry=True, delayed_cancel=True
-)
+    stop_entry=True, delayed_entry=True, delayed_cancel=True)\
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
+    .withBE(factor=1, buffer=0.4)\
+    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
+    
 b=BackTest(bot, bars_b).run()
 b.prepare_plot().show()
 
@@ -165,15 +167,15 @@ original: pos: 319 | profit: 39.17 | HH: 39.17 | maxDD: 30.71 | rel: 1.28 | UW d
 Bybit Opti:
     
 Fokus relation 
-12 mo bybit: pos: 178 | profit: 90.05 | HH: 99.42 | maxDD: 10.53 | rel: 8.17 | UW days: 38.9
+12 mo bybit: pos: 178 | profit: 90.49 | HH: 99.85 | maxDD: 10.52 | rel: 8.22 | UW days: 38.9
 12 mo bitmex: pos: 185 | profit: 0.15 | HH: 10.47 | maxDD: 31.43 | rel: 0.00 | UW days: 207.2
-    max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,
-    max_dist_factor=2, max_swing_length=4,
     min_channel_size_factor=0, max_channel_size_factor=16, 
-    max_risk_mul=2, risk_type= 1,
     entry_tightening=1, bars_till_cancel_triggered=5,
-    be_factor= 1, be_buffer= 0.4, allow_trail_back= False,
-    stop_entry=True, trail_to_swing=False, delayed_entry=True, delayed_cancel=True
+    stop_entry=True, delayed_entry=True, delayed_cancel=True)\
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)\
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) \
+    .withBE(factor=1, buffer=0.4)\
+    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
 
 
 #############
