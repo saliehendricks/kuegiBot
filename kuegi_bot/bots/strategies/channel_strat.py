@@ -67,6 +67,12 @@ class ChannelStrategy(Strategy):
     def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
         return self.channel.get_data(bars[1]) is not None
 
+    def get_stop_for_unmatched_amount(self, amount: float, bars: List[Bar]):
+        data = self.channel.get_data(bars[1])
+        stopLong = int(max(data.shortSwing, data.longTrail) if data.shortSwing is not None else data.longTrail)
+        stopShort = int(min(data.longSwing, data.shortTrail) if data.longSwing is not None else data.shortTrail)
+        return stopLong if amount > 0 else stopShort
+
     def prep_bars(self, is_new_bar: bool, bars: list):
         if is_new_bar:
             self.channel.on_tick(bars)

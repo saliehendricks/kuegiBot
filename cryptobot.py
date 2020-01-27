@@ -18,7 +18,7 @@ from kuegi_bot.utils.helper import load_settings_from_args
 def start_bot(botSettings):
     bot = MultiStrategyBot()
     if "strategies" in botSettings.keys():
-        strategies = botSettings.strategies[:]
+        strategies = dict(botSettings.strategies)
         del botSettings.strategies  # settings is now just the meta settings
         for stratId in strategies.keys():
             stratSettings = dict(botSettings)

@@ -38,8 +38,7 @@ class LiveTrading(OrderInterface):
             self.logger.info("############# Starting Live Trading Engine for %s ##############" % self.exchange.symbol)
             self.symbolInfo: Symbol = self.exchange.get_instrument()
             self.bot: TradingBot = trading_bot
-            self.bot.logger = self.logger
-            self.bot.order_interface = self
+            self.bot.prepare(self.logger,self)
             # init market data dict to be filled later
             self.bars: List[Bar] = []
             self.update_bars()

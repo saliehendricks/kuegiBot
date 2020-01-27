@@ -32,7 +32,7 @@ class KuegiStrategy(ChannelStrategy):
         super().init(bars, account, symbol)
 
     def owns_signal_id(self, signalId: str):
-        return signalId.startswith("kuegi+")
+        return signalId.startswith("kuegi+") or signalId.startswith('158') # old style pure tstamp
 
     def position_got_opened(self, position: Position, bars: List[Bar], account: Account, open_positions):
         other_id = TradingBot.get_other_direction_id(position.id)

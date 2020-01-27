@@ -49,6 +49,7 @@ class BitmexInterface(ExchangeInterface):
             order.stop_triggered= o["triggered"] == "StopOrderTriggered"
             order.executed_amount= (o["cumQty"])*sideMulti
             order.tstamp= parse_utc_timestamp(o['timestamp'])
+            order.execution_tstamp= order.tstamp
             order.active= o['ordStatus'] == 'New'
             order.exchange_id= o["orderID"]
             order.executed_price= o["avgPx"]

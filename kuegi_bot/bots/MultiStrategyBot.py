@@ -31,6 +31,9 @@ class Strategy:
     def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
         raise NotImplementedError
 
+    def get_stop_for_unmatched_amount(self, amount:float,bars:List[Bar]):
+        return None
+
     def prep_bars(self, is_new_bar: bool, bars: list):
         pass
 
@@ -90,6 +93,11 @@ class MultiStrategyBot(TradingBot):
             if strat.owns_signal_id(signalId):
                 strat.position_got_opened(position, bars, account, self.open_positions)
                 break
+
+    def get_stop_for_unmatched_amount(self, amount:float,bars:List[Bar]):
+        if len(self.strategies) == 1:
+            return self.strategies[0].get_stop_for_unmatched_amount(amount,bars)
+        return None
 
     def manage_open_orders(self, bars: List[Bar], account: Account):
         self.sync_executions(bars, account)
