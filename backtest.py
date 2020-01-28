@@ -56,16 +56,16 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
-             init_stop_type=1, tp_fac=10,
-             min_wick_fac=0.5, min_swing_length=11,
-             range_length=70, range_filter_fac=0,
+             init_stop_type=1, tp_fac=25,
+             min_wick_fac=0.3, min_swing_length=2,
+             range_length=50, range_filter_fac=0,
              close_on_opposite=False)
-    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
+    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
     .withBE(factor=1, buffer=0.3)
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
                  )
-b= BackTest(bot, bars_b).run()
+b= BackTest(bot, bars_m).run()
 
 
 
@@ -82,14 +82,17 @@ bybit 12: pos: 99 | profit: 40.61 | HH: 43.44 | maxDD: 9.55 | rel: 4.21 | UW day
              
 
 
-bitmex 24:  pos: 342 | profit: 92.20 | HH: 99.56 | maxDD: 18.72 | rel: 2.47 | UW days: 172.1
+bitmex 24:  pos: 604 | profit: 101.65 | HH: 117.14 | maxDD: 18.33 | rel: 2.83 | UW days: 113.1
 
-             max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1, max_swing_length=4,
-             init_stop_type=2, tp_fac=25, be_factor=1, be_buffer= 0.4,
+             init_stop_type=2, tp_fac=25,
              min_wick_fac=0.3, min_swing_length=2,
-             range_length = 20, range_filter_fac= 0,
-             close_on_opposite= False,entries=1,
-             max_risk_mul=2, risk_type= 0          
+             range_length=20, range_filter_fac=0,
+             close_on_opposite=False)
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+    .withBE(factor=1, buffer=0.3)
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
+            
 
 
 ############## Kuegi Bot

@@ -112,10 +112,13 @@ class Order:
         return str(self.__dict__)
 
     def print_info(self):
-        return "%s %.1f @ %.1f" % (
-            self.id,
-            self.amount,
-            self.limit_price if self.limit_price is not None else self.stop_price)
+        if self.limit_price is None and self.stop_price is None:
+            return "%s %.1f @ market" % (self.id, self.amount)
+        else:
+            return "%s %.1f @ %.1f" % (
+                self.id,
+                self.amount,
+                self.limit_price if self.limit_price is not None else self.stop_price)
 
 
 class OrderInterface:
