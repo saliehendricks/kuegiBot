@@ -124,7 +124,7 @@ class ByBitInterface(ExchangeInterface):
                             if (order.executed_amount - order.amount) * sideMulti >= 0:
                                 order.active = False
                             self.logger.info("got order execution: %s %.1f @ %.1f " % (
-                                                    exec['order_link_id'], exec['exec_qty'], exec['price']))
+                                                    exec['order_link_id'], exec['exec_qty'], float(exec['price'])))
 
                 elif topic == 'position':
                     # {'user_id': 712961, 'symbol': 'BTCUSD', 'size': 1, 'side': 'Buy', 'position_value':

@@ -55,6 +55,15 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 ##### SFP 240
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
+bot.add_strategy(KuegiStrategy(
+    min_channel_size_factor=1.618, max_channel_size_factor=16,
+    entry_tightening=0.1, bars_till_cancel_triggered=3,
+    stop_entry=True, delayed_entry=False, delayed_cancel=True)
+    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+    .withBE(factor=2, buffer=0.1)
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
+    )
 bot.add_strategy(SfpStrategy(
              init_stop_type=1, tp_fac=25,
              min_wick_fac=0.3, min_swing_length=2,
@@ -68,6 +77,9 @@ bot.add_strategy(SfpStrategy(
 b= BackTest(bot, bars_m).run()
 
 
+bot.create_performance_plot().show()
+
+b.prepare_plot().show()
 
 bybit 12: pos: 99 | profit: 40.61 | HH: 43.44 | maxDD: 9.55 | rel: 4.21 | UW days: 87.9
 

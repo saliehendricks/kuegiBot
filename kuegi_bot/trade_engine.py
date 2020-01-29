@@ -94,7 +94,7 @@ class LiveTrading(OrderInterface):
         for o in orders:
             if o.active:
                 self.account.open_orders.append(o)
-            elif o.id in prevOpenIds:
+            elif len(o.id) > 0 and o.id in prevOpenIds:
                 self.logger.info(
                     "order %s got %s @ %s" % (
                         o.id,

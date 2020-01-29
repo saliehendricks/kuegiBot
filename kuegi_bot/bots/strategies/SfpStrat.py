@@ -121,6 +121,9 @@ class SfpStrategy(ChannelStrategy):
                                         entry=entry * (1 - expectedEntrySplipagePerc), data=data)
 
             posId = TradingBot.full_pos_id(signalId, PositionDirection.SHORT)
+            pos = Position(id=posId, entry=entry, amount=amount, stop=stop,
+                                             tstamp=bars[0].tstamp)
+            open_positions[posId]= pos
             self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.ENTRY),
                                                   amount=amount, stop=None, limit=None))
             self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.SL),
@@ -129,8 +132,7 @@ class SfpStrategy(ChannelStrategy):
                 tp = entry - (stop - entry) * self.tp_fac
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
-            open_positions[posId] = Position(id=posId, entry=entry, amount=amount, stop=stop,
-                                             tstamp=bars[0].tstamp)
+            pos.status= "open"
         # LONG
         shortSFP = self.entries != 1 and gotLowSwing and bars[1].close - data.buffer > swingLow
         shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > maxLength / 2 \
@@ -159,6 +161,9 @@ class SfpStrategy(ChannelStrategy):
                                         entry=entry * (1 + expectedEntrySplipagePerc), data=data)
 
             posId = TradingBot.full_pos_id(signalId, PositionDirection.LONG)
+            pos = Position(id=posId, entry=entry, amount=amount, stop=stop,
+                                             tstamp=bars[0].tstamp)
+            open_positions[posId]= pos
             self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.ENTRY),
                                                   amount=amount, stop=None, limit=None))
             self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.SL),
@@ -168,5 +173,4 @@ class SfpStrategy(ChannelStrategy):
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
 
-            open_positions[posId] = Position(id=posId, entry=entry, amount=amount, stop=stop,
-                                             tstamp=bars[0].tstamp)
+            pos.status= "open"

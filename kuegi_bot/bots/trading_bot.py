@@ -163,7 +163,6 @@ class TradingBot:
     def sync_executions(self, bars: List[Bar], account: Account):
         for order in account.order_history[self.known_order_history:]:
             if order.executed_amount == 0:
-                self.logger.info("ignored canceled order: " + order.id)
                 continue
             posId = self.position_id_from_order_id(order.id)
             if posId not in self.open_positions.keys():
@@ -211,8 +210,6 @@ class TradingBot:
             # sounds legit, dont waste resources
             return
 
-        self.logger.info("Has to start order/pos sync with %f vs. %f and %i va %i"
-                         % (open_pos, account.open_position, len(self.open_positions), len(account.open_orders)))
 
         if not self.got_data_for_position_sync(bars):
             self.logger.warn("got no initial data, can't sync positions")
@@ -235,8 +232,10 @@ class TradingBot:
                     remaining_pos_ids.remove(posId)
 
         if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and open_pos == account.open_position:
-            self.logger.info("positions match, probably SL and TP")
             return
+
+        self.logger.info("Has to start order/pos sync with %f vs. %f and %i va %i"
+                         % (open_pos, account.open_position, len(self.open_positions), len(account.open_orders)))
 
         renamed_position_keys = []
         # now remaining orders and remaining positions contain the not matched ones
@@ -269,10 +268,10 @@ class TradingBot:
                                       tstamp=bars[0].tstamp)
                         newPos.status = "pending" if not order.stop_triggered else "triggered"
                         self.open_positions[posId] = newPos
-                        self.logger.warn("found unknown entry %s %.1f @ %.1f, added position" % (order.id, order.amount, order.stop_price))
+                        self.logger.warn("found unknown entry %s %.1f @ %.1f, added position" % (order.id, order.amount, order.stop_price if order.stop_price is not None else order.limit_price))
                     else:
                         self.logger.warn(
-                            "found unknown entry %s %.1f @ %.1f, canceling" % (order.id, order.amount, order.stop_price))
+                            "found unknown entry %s %.1f @ %.1f, canceling" % (order.id, order.amount, order.stop_price if order.stop_price is not None else order.limit_price))
                         self.order_interface.cancel_order(order)
 
             if orderType in [OrderType.SL, OrderType.TP]:
@@ -299,7 +298,7 @@ class TradingBot:
                     newPos.status = "open"
                     self.open_positions[posId] = newPos
                     renamed_position_keys.append(newPos.id)
-                    self.logger.warn("found unknown exit %s %.1f @ %.1f" % (order.id, order.amount, order.stop_price))
+                    self.logger.warn("found unknown exit %s %.1f @ %.1f" % (order.id, order.amount,order.stop_price if order.stop_price is not None else order.limit_price))
 
         self.logger.info("found " + str(len(self.open_positions)) + " existing positions on sync")
 
