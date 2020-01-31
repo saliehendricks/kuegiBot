@@ -30,7 +30,7 @@ class ByBitInterface(ExchangeInterface):
         self.ws.callback = self.socket_callback
 
         self.orders = {}
-        self.positions = {}
+        self.positions :List[AccountPosition] = {}
         self.bars = []
         self.last = 0
         self.init()
@@ -110,7 +110,7 @@ class ByBitInterface(ExchangeInterface):
                             prev.execution_tstamp = datetime.utcnow().timestamp()
                         self.orders[order.exchange_id] = prev
 
-                        self.logger.debug("received order update: %s\n from %s" % (str(order), str(o)))
+                        self.logger.info("received order update: %s\n from %s" % (str(order), str(o)))
                 elif topic == 'execution':
                     # {'symbol': 'BTCUSD', 'side': 'Buy', 'order_id': '96319991-c6ac-4ad5-bdf8-a5a79b624951',
                     # 'exec_id': '22add7a8-bb15-585f-b068-3a8648f6baff', 'order_link_id': '', 'price': '7307.5',
@@ -138,10 +138,16 @@ class ByBitInterface(ExchangeInterface):
                         sizefac = -1 if pos["side"] == "Sell" else 1
                         if self.positions[pos['symbol']].quantity != pos["size"] * sizefac:
                             self.logger.info("position changed %.2f -> %.2f" %(self.positions[pos['symbol']].quantity,pos["size"] * sizefac))
-                        self.positions[pos['symbol']] = AccountPosition(pos['symbol'],
+                        if pos['symbol'] not in self.positions.keys():
+                            self.positions[pos['symbol']] = AccountPosition(pos['symbol'],
                                                                         avgEntryPrice=float(pos["entry_price"]),
                                                                         quantity=pos["size"] * sizefac,
                                                                         walletBalance=float(pos['wallet_balance']))
+                        else:
+                            accountPos= self.positions[pos['symbol']]
+                            accountPos.quantity= pos["size"] * sizefac
+                            accountPos.avgEntryPrice=float(pos["entry_price"])
+                            accountPos.walletBalance=float(pos['wallet_balance'])
                 elif topic.startswith('klineV2.') and topic.endswith('.' + self.symbol):
                     # TODO: must integrate new data into existing bars, otherwise we might miss final data from
                     #  previous bar
@@ -299,9 +305,8 @@ class ByBitInterface(ExchangeInterface):
 
     def update_account(self, account: Account):
         pos = self.positions[self.symbol]
-        account.open_position = pos.quantity
-        account.balance = pos.walletBalance
-        account.equity = account.balance
+        account.open_position = pos
+        account.equity = pos.walletBalance
         account.usd_equity = account.equity * self.last
 
     def get_ticker(self, symbol=None):

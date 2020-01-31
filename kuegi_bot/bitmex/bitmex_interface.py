@@ -150,8 +150,8 @@ class BitmexInterface(ExchangeInterface):
     def update_account(self,account:Account):
         funds = self.bitmex.funds()
         last= self.get_ticker().last
-        account.open_position= self.get_position().quantity
-        account.balance = convert_to_XBT(funds['walletBalance'], funds['currency'])
+        account.open_position= self.get_position()
+        account.open_position.walletBalance = convert_to_XBT(funds['walletBalance'], funds['currency'])
         account.equity = convert_to_XBT(funds['marginBalance'], funds['currency'])
         account.usd_equity= account.equity*last
 

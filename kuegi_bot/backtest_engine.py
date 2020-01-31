@@ -59,9 +59,9 @@ class BackTest(OrderInterface):
 
     def reset(self):
         self.account = Account()
-        self.account.balance = self.initialEquity
-        self.account.open_position = 0
-        self.account.equity = self.account.balance
+        self.account.open_position.walletBalance = self.initialEquity
+        self.account.open_position.quantity = 0
+        self.account.equity = self.account.open_position.walletBalance
         self.account.usd_equity = self.initialEquity * self.bars[-1].open
         self.hh = self.initialEquity
         self.maxDD = 0
@@ -124,10 +124,10 @@ class BackTest(OrderInterface):
         price = min(intrabar.high,
                     max(intrabar.low, price))  # only prices within the bar. might mean less slipage
         order.executed_price = price
-        self.account.open_position += amount
+        self.account.open_position.quantity += amount
         delta = amount * (price if not self.symbol.isInverse else -1 / price)
-        self.account.balance -= delta
-        self.account.balance -= math.fabs(delta) * fee
+        self.account.open_position.walletBalance -= delta
+        self.account.open_position.walletBalance -= math.fabs(delta) * fee
 
         order.active = False
         order.execution_tstamp = intrabar.tstamp
@@ -135,7 +135,7 @@ class BackTest(OrderInterface):
         self.account.order_history.append(order)
         self.account.open_orders.remove(order)
         logger.debug(
-            "executed order " + order.id + " | " + str(self.account.usd_equity) + " " + str(self.account.open_position))
+            "executed order " + order.id + " | " + str(self.account.usd_equity) + " " + str(self.account.open_position.quantity))
 
     def handle_open_orders(self, intrabarToCheck: Bar) -> bool:
         something_changed = False
@@ -165,15 +165,15 @@ class BackTest(OrderInterface):
                         order.amount < 0 and order.limit_price < intrabarToCheck.high):
                     to_execute.append(order)
 
-        prevPos = self.account.open_position
+        prevPos = self.account.open_position.quantity
         for order in to_execute:
             something_changed = True
             self.handle_order_execution(order, intrabarToCheck)
 
         # update equity = balance + current value of open position
-        posValue = self.account.open_position * (
+        posValue = self.account.open_position.quantity * (
             intrabarToCheck.close if not self.symbol.isInverse else -1 / intrabarToCheck.close)
-        self.account.equity = self.account.balance + posValue
+        self.account.equity = self.account.open_position.walletBalance + posValue
         self.account.usd_equity = self.account.equity * intrabarToCheck.close
 
         self.update_stats()
@@ -181,9 +181,9 @@ class BackTest(OrderInterface):
 
     def update_stats(self):
 
-        if math.fabs(self.account.open_position) < 1 or self.lastHHPosition * self.account.open_position < 0:
+        if math.fabs(self.account.open_position.quantity) < 1 or self.lastHHPosition * self.account.open_position.quantity < 0:
             self.hh = max(self.hh, self.account.equity)  # only update HH on closed positions, no open equity
-            self.lastHHPosition = self.account.open_position
+            self.lastHHPosition = self.account.open_position.quantity
         dd = self.hh - self.account.equity
         if dd > self.maxDD:
             self.maxDD = max(self.maxDD, dd)
@@ -227,8 +227,8 @@ class BackTest(OrderInterface):
             for b in self.current_bars:
                 b.did_change = False
 
-        if self.account.open_position != 0:
-            self.send_order(Order(orderId="endOfTest", amount=-self.account.open_position))
+        if self.account.open_position.quantity != 0:
+            self.send_order(Order(orderId="endOfTest", amount=-self.account.open_position.quantity))
             self.handle_open_orders(self.bars[0].subbars[-1])
 
         profit = self.account.equity - self.initialEquity

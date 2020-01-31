@@ -168,7 +168,7 @@ class LiveTrading(OrderInterface):
             current= time.time()
             # execute if last execution is to long ago
             # or there was a tick since the last execution but the tick is more than debounce ms ago (to prevent race condition of account updates etc.)
-            if current - last > self.settings.LOOP_INTERVAL or (last < self.last_tick < current - 1):
+            if current - last > self.settings.LOOP_INTERVAL or (last < self.last_tick < current - 2):
                 last= time.time()
                 if not self.check_connection():
                     self.logger.error("Realtime data connection unexpectedly closed, exiting.")

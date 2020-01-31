@@ -64,10 +64,9 @@ class Bar:
 
 class Account:
     def __init__(self):
-        self.balance = 0
         self.equity = 0
         self.usd_equity = 0
-        self.open_position = 0
+        self.open_position:AccountPosition = None
         self.open_orders = []
         self.order_history = []
 

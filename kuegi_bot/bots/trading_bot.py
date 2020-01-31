@@ -206,7 +206,7 @@ class TradingBot:
             if pos.status == "open":
                 open_pos += pos.amount
 
-        if open_pos == account.open_position and len(self.open_positions) == len(account.open_orders):
+        if open_pos == account.open_position.quantity and len(self.open_positions) == len(account.open_orders):
             # sounds legit, dont waste resources
             return
 
@@ -231,11 +231,12 @@ class TradingBot:
                 if posId in remaining_pos_ids:
                     remaining_pos_ids.remove(posId)
 
-        if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and open_pos == account.open_position:
+        if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and abs(open_pos - account.open_position.quantity) < 0.1:
             return
 
-        self.logger.info("Has to start order/pos sync with %f vs. %f and %i va %i"
-                         % (open_pos, account.open_position, len(self.open_positions), len(account.open_orders)))
+        self.logger.info("Has to start order/pos sync with bot vs acc: %.1f vs. %.1f and %i vs %i, remaining: %i,  %i"
+                         % (open_pos, account.open_position.quantity, len(self.open_positions), len(account.open_orders),
+                            len(remaining_orders),len(remaining_pos_ids)))
 
         renamed_position_keys = []
         # now remaining orders and remaining positions contain the not matched ones
@@ -302,7 +303,7 @@ class TradingBot:
 
         self.logger.info("found " + str(len(self.open_positions)) + " existing positions on sync")
 
-        remainingPosition = account.open_position
+        remainingPosition = account.open_position.quantity
         for pos in self.open_positions.values():
             if pos.status == "open":
                 remainingPosition -= pos.amount
@@ -344,10 +345,13 @@ class TradingBot:
                     "couldn't account for " + str(newPos.amount) + " open contracts. Adding position with stop for it")
                 self.order_interface.send_order(Order(orderId=self.generate_order_id(posId, OrderType.SL),
                                                       stop=newPos.initial_stop, amount=-newPos.amount))
-            else:
+            elif account.open_position.quantity * remainingPosition > 0:
                 self.logger.info(
                     "couldn't account for " + str(remainingPosition) + " open contracts. Market close")
                 self.order_interface.send_order(Order(orderId=signalId+"_marketClose", amount=-remainingPosition))
+            else:
+                self.logger.info(
+                    "couldn't account for " + str(remainingPosition) + " open contracts. But close would increase exposure-> ignored")
     #####################################################
 
     def save_open_positions(self):
