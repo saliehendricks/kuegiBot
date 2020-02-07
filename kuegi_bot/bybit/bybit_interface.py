@@ -98,8 +98,13 @@ class ByBitInterface(ExchangeInterface):
                     # 'last_exec_price': '7307.5'}
                     for o in msgs:
                         order = self.orderDictToOrder(o)
-                        prev = self.orders[order.exchange_id] if order.exchange_id in self.orders.keys() else None
+                        prev : Order = self.orders[order.exchange_id] if order.exchange_id in self.orders.keys() else None
                         if prev is not None:
+                            if prev.tstamp > order.tstamp or abs(prev.executed_amount) > abs(order.executed_amount):
+                                # already got newer information, probably the info of the stop order getting
+                                # triggered, when i already got the info about execution
+                                self.logger.info("ignoring delayed update for %s from %s" % (str(prev), str(o)))
+                                continue
                             # ws removes stop price when executed
                             if order.stop_price is None:
                                 order.stop_price = prev.stop_price

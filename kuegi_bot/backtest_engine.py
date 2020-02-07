@@ -9,7 +9,7 @@ from typing import List
 from datetime import datetime
 
 from kuegi_bot.bots.trading_bot import TradingBot
-from kuegi_bot.utils.trading_classes import OrderInterface, Bar, Account, Order, Symbol
+from kuegi_bot.utils.trading_classes import OrderInterface, Bar, Account, Order, Symbol, AccountPosition
 from kuegi_bot.utils import log
 
 logger = log.setup_custom_logger("backtest", logging.INFO, logToConsole=True, logToFile=False)

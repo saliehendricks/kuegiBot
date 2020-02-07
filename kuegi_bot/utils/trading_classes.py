@@ -66,7 +66,7 @@ class Account:
     def __init__(self):
         self.equity = 0
         self.usd_equity = 0
-        self.open_position:AccountPosition = None
+        self.open_position:AccountPosition = AccountPosition(symbol="dummy",quantity=0,avgEntryPrice=0,walletBalance=0)
         self.open_orders = []
         self.order_history = []
 
@@ -103,8 +103,8 @@ class Order:
         self.executed_price = None
         self.active = True
         self.stop_triggered = False
-        self.tstamp = 0
-        self.execution_tstamp = 0
+        self.tstamp:float = 0
+        self.execution_tstamp:float = 0
         self.exchange_id: str = None
 
     def __str__(self):
@@ -163,7 +163,7 @@ class Position:
 def parse_utc_timestamp(timestamp: str) -> float:
     import calendar
     d = datetime.strptime(timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
-    return calendar.timegm(d.timetuple())
+    return calendar.timegm(d.timetuple())+d.microsecond/1000000.0
 
 
 def process_low_tf_bars(subbars: List[Bar], timeframe_minutes, start_offset_minutes=0):
