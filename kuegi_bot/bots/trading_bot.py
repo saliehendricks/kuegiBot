@@ -375,7 +375,7 @@ class TradingBot:
             data = {"last_time": self.last_time,
                     "last_tick": str(self.last_tick_time),
                     "positions": pos_json}
-            json.dump(data, file)
+            json.dump(data, file, sort_keys=False, indent=4)
 
     def cancel_all_orders_for_position(self, positionId, account: Account):
         to_cancel = []

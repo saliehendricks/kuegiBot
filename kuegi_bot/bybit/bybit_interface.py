@@ -103,7 +103,7 @@ class ByBitInterface(ExchangeInterface):
                             if prev.tstamp > order.tstamp or abs(prev.executed_amount) > abs(order.executed_amount):
                                 # already got newer information, probably the info of the stop order getting
                                 # triggered, when i already got the info about execution
-                                self.logger.info("ignoring delayed update for %s from %s" % (str(prev), str(o)))
+                                self.logger.info("ignoring delayed update for %s " % (prev.id))
                                 continue
                             # ws removes stop price when executed
                             if order.stop_price is None:
@@ -115,7 +115,7 @@ class ByBitInterface(ExchangeInterface):
                             prev.execution_tstamp = datetime.utcnow().timestamp()
                         self.orders[order.exchange_id] = prev
 
-                        self.logger.info("received order update: %s\n from %s" % (str(order), str(o)))
+                        self.logger.info("received order update: %s" % (str(order)))
                 elif topic == 'execution':
                     # {'symbol': 'BTCUSD', 'side': 'Buy', 'order_id': '96319991-c6ac-4ad5-bdf8-a5a79b624951',
                     # 'exec_id': '22add7a8-bb15-585f-b068-3a8648f6baff', 'order_link_id': '', 'price': '7307.5',
@@ -129,7 +129,7 @@ class ByBitInterface(ExchangeInterface):
                             if (order.executed_amount - order.amount) * sideMulti >= 0:
                                 order.active = False
                             self.logger.info("got order execution: %s %.1f @ %.1f " % (
-                                                    exec['order_link_id'], exec['exec_qty'], float(exec['price'])))
+                                                    exec['order_link_id'], exec['exec_qty']* sideMulti, float(exec['price'])))
 
                 elif topic == 'position':
                     # {'user_id': 712961, 'symbol': 'BTCUSD', 'size': 1, 'side': 'Buy', 'position_value':
