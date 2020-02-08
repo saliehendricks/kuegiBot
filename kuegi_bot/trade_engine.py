@@ -67,8 +67,9 @@ class LiveTrading(OrderInterface):
     def update_order(self, order: Order):
         self.exchange.update_order(order)
 
-    def cancel_order(self, orderId):
-        self.exchange.cancel_order(orderId)
+    def cancel_order(self, order: Order):
+        order.active= False # already mark it as cancelled, so not to mess up next loop
+        self.exchange.cancel_order(order)
 
     ###
     # Sanity

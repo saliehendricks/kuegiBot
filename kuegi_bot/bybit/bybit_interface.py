@@ -195,7 +195,7 @@ class ByBitInterface(ExchangeInterface):
         self.ws.exit()
 
     def _execute(self, call: HttpFuture, silent=False, remainingRetries=0):
-        sleep(2)  # weird tstmap bug with server
+        sleep(1)  # weird tstmap bug with server
         if not silent:
             self.logger.info("executing %s %s" % (str(call.operation.http_method).upper(), call.operation.path_name))
         # TODO: handle exception
