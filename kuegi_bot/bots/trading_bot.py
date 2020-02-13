@@ -329,11 +329,13 @@ class TradingBot:
                     pos.status = "missed"
                     self.position_closed(pos, account)
             elif pos.status == "open":
-                if remainingPosition * pos.amount > 0 and abs(remainingPosition) > abs(pos.amount):
+                if remainingPosition == 0 and pos.initial_stop is not None:
                     self.order_interface.send_order(
                         Order(orderId=self.generate_order_id(posId, OrderType.SL), amount=-pos.amount,
                               stop=pos.initial_stop))
-                    remainingPosition -= pos.amount
+                else:
+                    self.position_closed(pos, account)
+                    remainingPosition += pos.amount
             else:
                 self.position_closed(pos, account)
 
