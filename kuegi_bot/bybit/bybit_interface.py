@@ -195,7 +195,6 @@ class ByBitInterface(ExchangeInterface):
         self.ws.exit()
 
     def _execute(self, call: HttpFuture, silent=False, remainingRetries=0):
-        sleep(1)  # weird tstmap bug with server
         if not silent:
             self.logger.info("executing %s %s" % (str(call.operation.http_method).upper(), call.operation.path_name))
         # TODO: handle exception
@@ -211,6 +210,8 @@ class ByBitInterface(ExchangeInterface):
                 return None
 
     def internal_cancel_order(self, order: Order):
+        if order.exchange_id in self.orders.keys():
+            self.orders[order.exchange_id].active= False
         if order.stop_price is not None:
             self._execute(self.bybit.Conditional.Conditional_cancel(stop_order_id=order.exchange_id))
         else:

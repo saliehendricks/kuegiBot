@@ -215,6 +215,9 @@ class TradingBot:
         remaining_orders += account.open_orders
 
         for order in account.open_orders:
+            if not order.active:
+                remaining_orders.remove(order)
+                continue # got cancelled during run
             orderType = self.order_type_from_order_id(order.id)
             if orderType is None:
                 remaining_orders.remove(order)
