@@ -3,12 +3,13 @@ import math
 import plotly.graph_objects as go
 
 from kuegi_bot.bots.MultiStrategyBot import Strategy
+from kuegi_bot.bots.strategies.strat_with_exit_modules import StrategyWithExitModules
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.kuegi_channel import KuegiChannel, Data
 from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType
 
 
-class ChannelStrategy(Strategy):
+class ChannelStrategy(StrategyWithExitModules):
 
     def __init__(self):
         super().__init__()
@@ -16,8 +17,6 @@ class ChannelStrategy(Strategy):
         self.risk_factor = 1
         self.risk_type = 0  # 0= all equal, 1= 1 atr eq 1 R
         self.max_risk_mul = 1
-        self.be_factor = 0
-        self.be_buffer = 0
         self.trail_to_swing = False
         self.delayed_swing_trail = True
         self.trail_back = False
@@ -36,11 +35,6 @@ class ChannelStrategy(Strategy):
         self.channel = KuegiChannel(max_look_back, threshold_factor, buffer_factor, max_dist_factor, max_swing_length)
         return self
 
-    def withBE(self, factor, buffer):
-        self.be_factor = factor
-        self.be_buffer = buffer
-        return self
-
     def withTrail(self, trail_to_swing: bool = False, delayed_swing: bool = True, trail_back: bool = False):
         self.trail_active = True
         self.delayed_swing_trail = delayed_swing
@@ -53,11 +47,10 @@ class ChannelStrategy(Strategy):
         if self.channel is None:
             self.logger.error("No channel provided on init")
         else:
-            self.logger.info("init with %i %.1f %.3f %.1f %i | %.3f %.1f %i | %.1f %.1f | %s %s %s %s" %
+            self.logger.info("init with %i %.1f %.3f %.1f %i | %.3f %.1f %i | %s %s %s %s" %
                              (self.channel.max_look_back, self.channel.threshold_factor, self.channel.buffer_factor,
                               self.channel.max_dist_factor, self.channel.max_swing_length,
                               self.risk_factor, self.max_risk_mul, self.risk_type,
-                              self.be_factor, self.be_buffer,
                               self.trail_active, self.delayed_swing_trail, self.trail_to_swing, self.trail_back))
             self.channel.on_tick(bars)
 
@@ -65,19 +58,24 @@ class ChannelStrategy(Strategy):
         return self.channel.max_look_back + 1
 
     def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
-        return self.channel.get_data(bars[1]) is not None
+        result= super().got_data_for_position_sync(bars)
+        return result and (self.channel.get_data(bars[1]) is not None)
 
     def get_stop_for_unmatched_amount(self, amount: float, bars: List[Bar]):
+        # ignore possible stops from modules for now
         data = self.channel.get_data(bars[1])
         stopLong = int(max(data.shortSwing, data.longTrail) if data.shortSwing is not None else data.longTrail)
         stopShort = int(min(data.longSwing, data.shortTrail) if data.longSwing is not None else data.shortTrail)
-        return stopLong if amount > 0 else stopShort
+        stop= stopLong if amount > 0 else stopShort
 
     def prep_bars(self, is_new_bar: bool, bars: list):
         if is_new_bar:
             self.channel.on_tick(bars)
 
     def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
+        # first the modules
+        super().manage_open_order(order,position,bars,to_update,to_cancel,open_positions)
+        # now the channel stuff
         last_data: Data = self.channel.get_data(bars[2])
         data: Data = self.channel.get_data(bars[1])
         if data is not None:
@@ -97,19 +95,13 @@ class ChannelStrategy(Strategy):
                 newStop = order.stop_price
                 isLong = position.amount > 0
                 if self.trail_active:
-                    newStop = self.__trail_stop(direction=1 if isLong else -1,
-                                                current_stop=newStop,
-                                                trail=stopLong if isLong else stopShort,
-                                                initial_stop=position.initial_stop)
+                    trail = stopLong if isLong else stopShort
+                    if (trail - newStop) * position.amount > 0 or \
+                            (self.trail_back and position.initial_stop is not None 
+                                and (trail - position.initial_stop) * position.amount > 0):
+                        newStop = math.floor(trail) if not isLong else math.ceil(trail)
+                    
 
-                if self.be_factor > 0 and position.wanted_entry is not None and position.initial_stop is not None:
-                    entry_diff = (position.wanted_entry - position.initial_stop)
-                    ep = bars[0].high if isLong else bars[0].low
-                    if (ep - (position.wanted_entry + entry_diff * self.be_factor)) * position.amount > 0:
-                        newStop = self.__trail_stop(direction=1 if isLong else -1,
-                                                    current_stop=newStop,
-                                                    trail=position.wanted_entry + entry_diff * self.be_buffer,
-                                                    initial_stop=position.initial_stop, only_forward= True)
                 if newStop != order.stop_price:
                     order.stop_price = newStop
                     to_update.append(order)
@@ -127,15 +119,6 @@ class ChannelStrategy(Strategy):
                             name=self.channel.id + "_" + names[idx])
 
     ####################################
-
-    def __trail_stop(self, direction, current_stop, trail, initial_stop,only_forward= False):
-        # direction should be > 0 for long and < 0 for short
-        if (trail - current_stop) * direction > 0 or \
-                (not only_forward and self.trail_back
-                 and initial_stop is not None and (trail - initial_stop) * direction > 0):
-            return math.floor(trail) if direction < 0 else math.ceil(trail)
-        else:
-            return current_stop
 
     def calc_pos_size(self, risk, entry, exitPrice, data: Data):
         if self.risk_type <= 2:

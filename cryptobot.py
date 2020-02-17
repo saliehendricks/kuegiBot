@@ -9,6 +9,7 @@ from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
 from kuegi_bot.bots.kuegi_bot import KuegiBot
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
+from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE
 from kuegi_bot.trade_engine import LiveTrading
 from kuegi_bot.utils import log
 from kuegi_bot.utils.dotdict import dotdict
@@ -41,8 +42,8 @@ def start_bot(botSettings):
                         .withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
                                 risk_type=stratSettings.KB_RISK_TYPE,
                                 max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
-                        .withBE(factor=stratSettings.KB_BE_FACTOR,
-                                buffer=stratSettings.KB_BE_BUFFER)
+                        .withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
+                                                     buffer=stratSettings.KB_BE_BUFFER))
                         .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
                                    delayed_swing=stratSettings.KB_DELAYED_ENTRY,
                                    trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
@@ -64,8 +65,8 @@ def start_bot(botSettings):
                     .withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
                             risk_type=stratSettings.KB_RISK_TYPE,
                             max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
-                    .withBE(factor=stratSettings.KB_BE_FACTOR,
-                            buffer=stratSettings.KB_BE_BUFFER)
+                    .withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
+                                                 buffer=stratSettings.KB_BE_BUFFER))
                     .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
                                delayed_swing=stratSettings.KB_DELAYED_ENTRY,
                                trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
@@ -88,8 +89,8 @@ def start_bot(botSettings):
                          .withRM(risk_factor=botSettings.KB_RISK_FACTOR,
                                  risk_type=botSettings.KB_RISK_TYPE,
                                  max_risk_mul=botSettings.KB_MAX_RISK_MUL)
-                         .withBE(factor=botSettings.KB_BE_FACTOR,
-                                 buffer=botSettings.KB_BE_BUFFER)
+                         .withExitModule(SimpleBE(factor=botSettings.KB_BE_FACTOR,
+                                                      buffer=botSettings.KB_BE_BUFFER))
                          .withTrail(trail_to_swing=botSettings.KB_TRAIL_TO_SWING,
                                     delayed_swing=botSettings.KB_DELAYED_ENTRY,
                                     trail_back=botSettings.KB_ALLOW_TRAIL_BACK)

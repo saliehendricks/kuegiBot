@@ -1,5 +1,6 @@
 from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
+from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.utils.helper import load_bars, prepare_plot
@@ -49,6 +50,18 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 #bars3= process_low_tf_bars(m1_bars, 240, 120)
 #bars4= process_low_tf_bars(m1_bars, 240, 180)
 
+bot=MultiStrategyBot(logger=logger, directionFilter= 0)
+bot.add_strategy(SfpStrategy(
+             init_stop_type=1, tp_fac=10,
+             min_wick_fac=0.5, min_swing_length=11,
+             range_length=70, range_filter_fac=0,
+             close_on_opposite=False)
+    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+    .withExitModule(SimpleBE(factor=1, buffer=0.3))
+    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
+                 )
+b= BackTest(bot, bars_b).run()
 
 
 '''
@@ -61,7 +74,7 @@ bot.add_strategy(KuegiStrategy(
     stop_entry=True, delayed_entry=False, delayed_cancel=True)
     .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withBE(factor=2, buffer=0.1)
+    withExitModule(SimpleBE(factor=2, buffer=0.1))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
     )
 bot.add_strategy(SfpStrategy(
@@ -71,7 +84,7 @@ bot.add_strategy(SfpStrategy(
              close_on_opposite=False)
     .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withBE(factor=1, buffer=0.3)
+    .withExitModule(SimpleBE(factor=1, buffer=0.3))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
                  )
 b= BackTest(bot, bars_m).run()
@@ -89,7 +102,7 @@ bybit 12: pos: 99 | profit: 40.61 | HH: 43.44 | maxDD: 9.55 | rel: 4.21 | UW day
              close_on_opposite=False)
     .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withBE(factor=1, buffer=0.3)
+    .withExitModule(SimpleBE(factor=1, buffer=0.3))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
              
 
@@ -102,7 +115,7 @@ bitmex 24:  pos: 604 | profit: 101.65 | HH: 117.14 | maxDD: 18.33 | rel: 2.83 | 
              close_on_opposite=False)
     .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withBE(factor=1, buffer=0.3)
+    .withExitModule(SimpleBE(factor=1, buffer=0.3))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
             
 
@@ -116,7 +129,7 @@ bot.add_strategy(KuegiStrategy(
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
     .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) 
-    .withBE(factor=1, buffer=0.4)
+    .withExitModule(SimpleBE(factor=1, buffer=0.4))
     .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
                  )
 b= BackTest(bot, bars_b).run()
@@ -153,7 +166,7 @@ Fokus relation
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
     .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) 
-    .withBE(factor=1, buffer=0.4)
+    .withExitModule(SimpleBE(factor=1, buffer=0.4))
     .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
 
 
@@ -169,7 +182,7 @@ Fokus on Profit/DD:
     stop_entry=True, delayed_entry=False, delayed_cancel=True)
     .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withBE(factor=2, buffer=0.1)
+    .withExitModule(SimpleBE(factor=2, buffer=0.1))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
     
 
