@@ -214,6 +214,7 @@ class TradingBot:
         remaining_orders = []
         remaining_orders += account.open_orders
 
+        # first check if there even is a diparity (positions without stops, or orders without position)
         for order in account.open_orders:
             if not order.active:
                 remaining_orders.remove(order)
@@ -225,7 +226,7 @@ class TradingBot:
             posId = self.position_id_from_order_id(order.id)
             if posId in self.open_positions.keys():
                 remaining_orders.remove(order)
-                if posId in remaining_pos_ids:
+                if posId in remaining_pos_ids and orderType == OrderType.SL: # only remove from remaining if its SL. every position needs a stoploss!
                     remaining_pos_ids.remove(posId)
 
         if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and abs(
@@ -238,85 +239,71 @@ class TradingBot:
                              len(account.open_orders),
                              len(remaining_orders), len(remaining_pos_ids)))
 
-        renamed_position_keys = []
-        # now remaining orders and remaining positions contain the not matched ones
-        for order in remaining_orders:
-            orderType = self.order_type_from_order_id(order.id)
-            posId = self.position_id_from_order_id(order.id)
-            if orderType == OrderType.ENTRY:
-                # check for a matching position
-                matchedPos = False
-                for tempPosId in remaining_pos_ids:
-                    # no matching order found
-                    pos = self.open_positions[tempPosId]
-                    if (pos.status == "pending" or pos.status == "triggered") and pos.amount == order.amount and \
-                            pos.wanted_entry == order.stop_price:
-                        self.logger.info(
-                            "unmatched open order %s matched to position %s. adapted pos Id" % (order.id, pos.id))
-                        pos.id = posId  # this position now belongs to this order
-                        if tempPosId in remaining_pos_ids:
-                            remaining_pos_ids.remove(tempPosId)
-                        matchedPos = True
-                        break
-                if not matchedPos:
-                    # add position for unkown order
-                    stop = self.get_stop_for_unmatched_amount(order.amount, bars)
-                    if stop is not None:
-                        newPos = Position(id=posId,
-                                          entry=order.limit_price if order.limit_price is not None else order.stop_price,
-                                          amount=order.amount,
-                                          stop=stop,
-                                          tstamp=bars[0].tstamp)
-                        newPos.status = "pending" if not order.stop_triggered else "triggered"
-                        self.open_positions[posId] = newPos
-                        self.logger.warn("found unknown entry %s %.1f @ %.1f, added position"
-                                         % (order.id, order.amount,
-                                            order.stop_price if order.stop_price is not None else order.limit_price))
-                    else:
-                        self.logger.warn(
-                            "found unknown entry %s %.1f @ %.1f, canceling"
-                            % (order.id, order.amount,
-                               order.stop_price if order.stop_price is not None else order.limit_price))
-                        self.order_interface.cancel_order(order)
-
-            if orderType in [OrderType.SL, OrderType.TP]:
-                matchedPos = False
-                if posId in renamed_position_keys:
-                    # already adapted by order side of exit
-                    continue
-
-                for tempPosId in remaining_pos_ids:
-                    pos = self.open_positions[tempPosId]
-                    if (pos.status == "open") and pos.amount == -order.amount:
-                        self.logger.info(
-                            "unmatched exit order %s matched to position %s. adapted pos Id" % (order.id, pos.id))
-                        pos.id = posId  # this position now belongs to this order
-                        renamed_position_keys.append(pos.id)
-                        if posId in remaining_pos_ids:
-                            remaining_pos_ids.remove(tempPosId)
-                        matchedPos = True
-                        break
-                # no matching order found
-                if not matchedPos:
-                    newPos = Position(id=posId, entry=None, amount=-order.amount,
-                                      stop=order.stop_price, tstamp=bars[0].tstamp)
-                    newPos.status = "open"
-                    self.open_positions[posId] = newPos
-                    renamed_position_keys.append(newPos.id)
-                    self.logger.warn("found unknown exit %s %.1f @ %.1f" % (
-                        order.id, order.amount,
-                        order.stop_price if order.stop_price is not None else order.limit_price))
-
-        # FIXME: need to check if all positions got exits in the market. inparity might mean that a position was closed but not updated
-        self.logger.info("found " + str(len(self.open_positions)) + " existing positions on sync")
 
         remainingPosition = account.open_position.quantity
         for pos in self.open_positions.values():
             if pos.status == "open":
                 remainingPosition -= pos.amount
 
+        waiting_tps = []
+
+        # now remaining orders and remaining positions contain the not matched ones
+        for order in remaining_orders:
+            orderType = self.order_type_from_order_id(order.id)
+            posId = self.position_id_from_order_id(order.id)
+            if not order.active: # already canceled or executed
+                continue
+
+            if orderType == OrderType.ENTRY:
+                # add position for unkown order
+                stop = self.get_stop_for_unmatched_amount(order.amount, bars)
+                if stop is not None:
+                    newPos = Position(id=posId,
+                                      entry=order.limit_price if order.limit_price is not None else order.stop_price,
+                                      amount=order.amount,
+                                      stop=stop,
+                                      tstamp=bars[0].tstamp)
+                    newPos.status = "pending" if not order.stop_triggered else "triggered"
+                    self.open_positions[posId] = newPos
+                    self.logger.warn("found unknown entry %s %.1f @ %.1f, added position"
+                                     % (order.id, order.amount,
+                                        order.stop_price if order.stop_price is not None else order.limit_price))
+                else:
+                    self.logger.warn(
+                        "found unknown entry %s %.1f @ %.1f, but don't know what stop to use -> canceling"
+                        % (order.id, order.amount,
+                           order.stop_price if order.stop_price is not None else order.limit_price))
+                    self.order_interface.cancel_order(order)
+
+            elif orderType == OrderType.SL and remainingPosition*order.amount < 0 and abs(remainingPosition) > abs(order.amount):
+                # only assume open position for the waiting SL with the remainingPosition also indicates it, 
+                # otherwise it might be a pending cancel (from executed TP) or already executed
+                newPos = Position(id=posId, entry=None, amount=-order.amount,
+                                  stop=order.stop_price, tstamp=bars[0].tstamp)
+                newPos.status = "open"
+                remainingPosition -= newPos.amount
+                self.open_positions[posId] = newPos
+                self.logger.warn("found unknown exit %s %.1f @ %.1f, opened position for it" % (
+                    order.id, order.amount,
+                    order.stop_price if order.stop_price is not None else order.limit_price))
+            else :
+                waiting_tps.append(order)
+
+        # cancel orphaned TPs
+        for order in waiting_tps:
+            orderType = self.order_type_from_order_id(order.id)
+            posId = self.position_id_from_order_id(order.id)
+            if posId not in self.open_positions.keys(): # still not in (might have been added in previous for)
+                self.logger.warn(
+                    "didn't find matching position for order %s %.1f @ %.1f -> canceling"
+                    % (order.id, order.amount,
+                       order.stop_price if order.stop_price is not None else order.limit_price))
+                self.order_interface.cancel_order(order)
+
+        self.logger.info("found " + str(len(self.open_positions)) + " existing positions on sync")
+
+        # positions with no exit in the market
         for posId in remaining_pos_ids:
-            # no matching order found
             pos = self.open_positions[posId]
             if pos.status == "pending" or pos.status == "triggered":
                 # should have the opening order in the system, but doesn't
@@ -329,16 +316,19 @@ class TradingBot:
                     pos.status = "missed"
                     self.position_closed(pos, account)
             elif pos.status == "open":
-                if remainingPosition == 0 and pos.initial_stop is not None:
+                if remainingPosition == 0 and pos.initial_stop is not None: # for some reason everything matches but we are missing the stop in the market
+                    self.logger.warn("found position with no stop in market. added stop for it: %s with %.1f contracts" % (posId,pos.amount))
                     self.order_interface.send_order(
                         Order(orderId=self.generate_order_id(posId, OrderType.SL), amount=-pos.amount,
                               stop=pos.initial_stop))
                 else:
+                    self.logger.warn("found position with no stop in market. %s with %.1f contracts. but remaining Position doesn't match so assume it was already closed." % (posId,pos.amount))
                     self.position_closed(pos, account)
                     remainingPosition += pos.amount
             else:
                 self.position_closed(pos, account)
 
+# now there should not be any mismatch between positions and orders.
         if remainingPosition != 0:
             unmatched_stop = self.get_stop_for_unmatched_amount(remainingPosition, bars)
             signalId = str(bars[1].tstamp) + '+' + str(randint(0, 99))
