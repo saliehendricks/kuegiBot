@@ -1,9 +1,5 @@
-import json
-import logging
-import sys
-
-from kuegi_bot.bitmex.bitmex_interface import BitmexInterface
-from kuegi_bot.bybit.bybit_interface import ByBitInterface
+from kuegi_bot.exchanges.bitmex.bitmex_interface import BitmexInterface
+from kuegi_bot.exchanges.bybit.bybit_interface import ByBitInterface
 from kuegi_bot.utils import log
 from kuegi_bot.utils.helper import load_settings_from_args
 

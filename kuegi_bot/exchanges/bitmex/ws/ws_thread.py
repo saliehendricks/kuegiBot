@@ -1,4 +1,3 @@
-import sys
 import websocket
 import threading
 import traceback
@@ -7,7 +6,7 @@ from time import sleep
 import json
 import decimal
 import logging
-from kuegi_bot.bitmex.auth import generate_expires, generate_signature
+from kuegi_bot.exchanges.bitmex.auth import generate_expires, generate_signature
 from kuegi_bot.utils.math import toNearest
 from future.utils import iteritems
 from future.standard_library import hooks

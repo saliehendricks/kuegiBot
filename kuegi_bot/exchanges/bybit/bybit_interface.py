@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import sleep
 
 import bybit
 
@@ -7,8 +6,7 @@ from typing import List
 
 from bravado.http_future import HttpFuture
 
-from kuegi_bot.bybit.bybit_websocket import BybitWebsocket
-from kuegi_bot.utils import log, constants, errors
+from kuegi_bot.exchanges.bybit.bybit_websocket import BybitWebsocket
 from kuegi_bot.utils.trading_classes import Order, Account, Bar, ExchangeInterface, TickerData, AccountPosition, \
     Symbol, process_low_tf_bars, parse_utc_timestamp
 

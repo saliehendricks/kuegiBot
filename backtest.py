@@ -1,6 +1,6 @@
 from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
-from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE
+from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE, ParaTrail
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.utils.helper import load_bars, prepare_plot
@@ -59,6 +59,7 @@ bot.add_strategy(SfpStrategy(
     .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
     .withExitModule(SimpleBE(factor=1, buffer=0.3))
+    .withExitModule(ParaTrail(accInit=0.005, accInc=0.01, accMax=0.1))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
                  )
 b= BackTest(bot, bars_b).run()
@@ -94,7 +95,7 @@ bot.create_performance_plot().show()
 
 b.prepare_plot().show()
 
-bybit 12: pos: 99 | profit: 40.61 | HH: 43.44 | maxDD: 9.55 | rel: 4.21 | UW days: 87.9
+bybit 12: pos: 99 | profit: 41.57 | HH: 44.40 | maxDD: 9.55 | rel: 4.31 | UW days: 87.9
 
              init_stop_type=1, tp_fac=10,
              min_wick_fac=0.5, min_swing_length=11,
@@ -103,6 +104,7 @@ bybit 12: pos: 99 | profit: 40.61 | HH: 43.44 | maxDD: 9.55 | rel: 4.21 | UW day
     .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=1,max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
     .withExitModule(SimpleBE(factor=1, buffer=0.3))
+    .withExitModule(ParaTrail(accInit=0.005, accInc=0.01, accMax=0.1))
     .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
              
 

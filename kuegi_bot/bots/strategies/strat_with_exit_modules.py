@@ -7,19 +7,19 @@ import plotly.graph_objects as go
 from kuegi_bot.bots.MultiStrategyBot import Strategy
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.kuegi_channel import KuegiChannel, Data
-from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType
+from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position
 
 
 class ExitModule:
     def __init__(self):
-        self.logger= None
+        self.logger = None
         pass
 
     def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
         pass
 
-    def init(self,logger):
-        self.logger= logger
+    def init(self, logger):
+        self.logger = logger
 
     def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
         return True
@@ -27,15 +27,15 @@ class ExitModule:
     def get_stop_for_unmatched_amount(self, amount: float, bars: List[Bar]):
         return None
 
-    def get_data(self,bar:Bar,dataId):
-        if 'modules' in bar.bot_data.keys() and self.id in bar.bot_data['modules'].keys():
+    def get_data(self, bar: Bar, dataId):
+        if 'modules' in bar.bot_data.keys() and dataId in bar.bot_data['modules'].keys():
             return bar.bot_data["modules"][dataId]
         else:
             return None
 
-    def write_data(self,bar:Bar, dataId, data):
+    def write_data(self, bar: Bar, dataId, data):
         if "modules" not in bar.bot_data.keys():
-            bar.bot_data['modules']={}
+            bar.bot_data['modules'] = {}
 
         bar.bot_data["modules"][dataId] = data
 
@@ -46,7 +46,7 @@ class StrategyWithExitModules(Strategy):
         super().__init__()
         self.exitModules = []
 
-    def withExitModule(self,module:ExitModule):
+    def withExitModule(self, module: ExitModule):
         self.exitModules.append(module)
         return self
 
@@ -60,7 +60,7 @@ class StrategyWithExitModules(Strategy):
 
     def get_stop_for_unmatched_amount(self, amount: float, bars: List[Bar]):
         for module in self.exitModules:
-            exit= module.get_stop_for_unmatched_amount(amount,bars)
+            exit = module.get_stop_for_unmatched_amount(amount, bars)
             if exit is not None:
                 return exit
         return None
@@ -69,24 +69,26 @@ class StrategyWithExitModules(Strategy):
         orderType = TradingBot.order_type_from_order_id(order.id)
         if orderType == OrderType.SL:
             for module in self.exitModules:
-                module.manage_open_order(order,position,bars,to_update,to_cancel,open_positions)
+                module.manage_open_order(order, position, bars, to_update, to_cancel, open_positions)
+
 
 ########
 # some simple exit modules for reuse
 ##########
 
 class SimpleBE(ExitModule):
-	''' trails the stop to "break even" when the price move a given factor of the entry-risk in the right direction
-		"break even" includes a buffer (multiple of the entry-risk).
-	'''
+    ''' trails the stop to "break even" when the price move a given factor of the entry-risk in the right direction
+        "break even" includes a buffer (multiple of the entry-risk).
+    '''
 
     def __init__(self, factor, buffer):
+        super().__init__()
         self.factor = factor
         self.buffer = buffer
 
-    def init(self,logger):
+    def init(self, logger):
         super().init(logger)
-        self.logger.info("init BE %.1f %.1f" %(self.factor,self.buffer))
+        self.logger.info("init BE %.1f %.1f" % (self.factor, self.buffer))
 
     def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
         if position is not None:
@@ -97,8 +99,8 @@ class SimpleBE(ExitModule):
                 ep = bars[0].high if position.amount > 0 else bars[0].low
                 be = position.wanted_entry + entry_diff * self.buffer
                 if (ep - (position.wanted_entry + entry_diff * self.factor)) * position.amount > 0 \
-                    and (be - newStop) * position.amount > 0 :
-                    newStop= math.floor(be) if position.amount < 0 else math.ceil(be)
+                        and (be - newStop) * position.amount > 0:
+                    newStop = math.floor(be) if position.amount < 0 else math.ceil(be)
 
             if newStop != order.stop_price:
                 order.stop_price = newStop
@@ -106,53 +108,73 @@ class SimpleBE(ExitModule):
 
 
 class ParaData:
-	def __init__(self):
-		self.acc= 0
-		self.ep= 0
-		self.stop= 0
+    def __init__(self):
+        self.acc = 0
+        self.ep = 0
+        self.stop = 0
+
 
 class ParaTrail(ExitModule):
-	''' trails the stop according to a parabolic SAR. ep is resetted on the entry of the position. 
-	lastEp and factor is stored in the bar data with the positionId
-	'''
+    '''
+    trails the stop according to a parabolic SAR. ep is resetted on the entry of the position.
+    lastEp and factor is stored in the bar data with the positionId
+    '''
 
     def __init__(self, accInit, accInc, accMax):
+        super().__init__()
         self.accInit = accInit
         self.accInc = accInc
         self.accMax = accMax
 
-    def init(self,logger):
+    def init(self, logger):
         super().init(logger)
-        self.logger.info("init ParaTrail %.2f %.2f %.2f" %(self.accInit,self.accInc,self.accMax))
+        self.logger.info("init ParaTrail %.2f %.2f %.2f" % (self.accInit, self.accInc, self.accMax))
+
+    def data_id(self,position:Position):
+        return position.id + '_paraExit'
 
     def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
-        if position is not None:
-        	self.update_bar_data(position,bars)
-        	data= self.get_data(bars[0])
-            # trail
-            newStop = order.stop_price
-            if data is not None and (data.stop - newStop) * position.amount > 0 :
-                 newStop= math.floor(data.stop) if position.amount < 0 else math.ceil(data.stop)
+        if position is None:
+            return
 
-            if newStop != order.stop_price:
-                order.stop_price = newStop
-                to_update.append(order)
+        self.update_bar_data(position, bars)
+        data = self.get_data(bars[0],self.data_id(position))
+        # trail
+        newStop = order.stop_price
+        if data is not None and (data.stop - newStop) * position.amount > 0:
+            newStop = math.floor(data.stop) if position.amount < 0 else math.ceil(data.stop)
 
-    def update_bar_data(self,position,bars:List[Bar]):
-    	if position.initial_stop is not None and position.
-    	dataId= position.id+'_paraExit'
-    	# find first bar with data (or entry bar)
-    	lastIdx= 1
-    	while lastIdx > 0:
-    		lastbar= bars[barIdx]
-    		currentBar= bars[barIdx-1]
-	    	last:ParaData= self.get_data(bar,dataId)
-			current:ParaData= ParaData()
-			if last is not None:
-	    		current.ep = max(last.ep,currentBar.high) if position.amount > 0 else min(last.ep,currentBar.low)
+        if newStop != order.stop_price:
+            order.stop_price = newStop
+            to_update.append(order)
 
-	    	else: # means its the first bar of the position
-	    		current.ep= currentBar.high if position.amount>0 else currentBar.low
-	    		current.acc= self.accInit
-	    		current.trail= position.initial_stop
+    def update_bar_data(self, position: Position, bars: List[Bar]):
+        if position.initial_stop is None or position.entry_tstamp is None or position.entry_tstamp == 0:
+            return  # cant trail with no initial and not defined entry
+        dataId = self.data_id(position)
+        # find first bar with data (or entry bar)
+        lastIdx = 1
+        while self.get_data(bars[lastIdx], dataId) is None and bars[lastIdx].tstamp > position.entry_tstamp:
+            lastIdx += 1
+            if lastIdx == len(bars):
+                break
+        if self.get_data(bars[lastIdx - 1], dataId) is None and bars[lastIdx].tstamp > position.entry_tstamp:
+            lastIdx += 1  # didn't see the current bar before: make sure we got the latest update on the last one too
 
+        while lastIdx > 0:
+            lastbar = bars[lastIdx]
+            currentBar = bars[lastIdx - 1]
+            last: ParaData = self.get_data(lastbar, dataId)
+            current: ParaData = ParaData()
+            if last is not None:
+                current.ep = max(last.ep, currentBar.high) if position.amount > 0 else min(last.ep, currentBar.low)
+                current.acc = last.acc
+                if current.ep != last.ep:
+                    current.acc = min(current.acc + self.accInc, self.accMax)
+                current.stop = last.stop + (current.ep - last.stop) * current.acc
+            else:  # means its the first bar of the position
+                current.ep = currentBar.high if position.amount > 0 else currentBar.low
+                current.acc = self.accInit
+                current.stop = position.initial_stop
+            self.write_data(bar=currentBar, dataId=dataId, data=current)
+            lastIdx -= 1

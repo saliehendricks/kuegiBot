@@ -174,3 +174,4 @@ class SfpStrategy(ChannelStrategy):
                                                       amount=-amount, stop=None, limit=tp))
 
             pos.status= "open"
+            pos.entry_tstamp = pos.signal_tstamp

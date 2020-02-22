@@ -6,9 +6,9 @@ import datetime
 import json
 import base64
 import uuid
-from kuegi_bot.bitmex.auth import APIKeyAuthWithExpires
-from kuegi_bot.utils import constants, errors,log
-from kuegi_bot.bitmex.ws.ws_thread import BitMEXWebsocket
+from kuegi_bot.exchanges.bitmex.auth import APIKeyAuthWithExpires
+from kuegi_bot.utils import constants, errors
+from kuegi_bot.exchanges.bitmex.ws.ws_thread import BitMEXWebsocket
 from kuegi_bot.utils.trading_classes import Order
 
 

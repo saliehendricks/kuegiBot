@@ -2,8 +2,8 @@ from __future__ import absolute_import
 
 from typing import List
 
-from kuegi_bot.bitmex import bitmex
-from kuegi_bot.utils import log, constants, errors
+from kuegi_bot.exchanges.bitmex import bitmex
+from kuegi_bot.utils import constants, errors
 from kuegi_bot.utils.trading_classes import Order, Account, Bar, ExchangeInterface, TickerData, AccountPosition, Symbol, \
     process_low_tf_bars,parse_utc_timestamp
 
@@ -13,7 +13,7 @@ class BitmexInterface(ExchangeInterface):
         super().__init__(settings,logger,on_tick_callback)
         self.symbol = settings.SYMBOL
         self.bitmex= None
-        self.bitmex = bitmex.BitMEX(settings= settings,logger= logger, symbol=self.symbol,
+        self.bitmex = bitmex.BitMEX(settings= settings, logger= logger, symbol=self.symbol,
                                     apiKey=settings.API_KEY, apiSecret=settings.API_SECRET,
                                     timeout=settings.TIMEOUT, socketCallback=self._websocket_callback)
 

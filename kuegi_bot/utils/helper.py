@@ -4,9 +4,9 @@ import sys
 from datetime import datetime
 from typing import List
 
-from kuegi_bot.bybit.bybit_interface import ByBitInterface
+from kuegi_bot.exchanges.bybit.bybit_interface import ByBitInterface
 from kuegi_bot.indicator import Indicator
-from kuegi_bot.bitmex.bitmex_interface import BitmexInterface
+from kuegi_bot.exchanges.bitmex.bitmex_interface import BitmexInterface
 from kuegi_bot.utils import log
 
 import plotly.graph_objects as go

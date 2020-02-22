@@ -1,6 +1,6 @@
 from requests.auth import AuthBase
 import time
-from kuegi_bot.bitmex.auth import generate_signature
+from kuegi_bot.exchanges.bitmex.auth import generate_signature
 
 
 class APIKeyAuthWithExpires(AuthBase):
