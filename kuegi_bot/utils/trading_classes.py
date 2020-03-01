@@ -158,13 +158,21 @@ class Position:
         return str(self.__dict__)
 
     def to_json(self):
-        return self.__dict__
+        tempdic = dict(self.__dict__)
+        tempdic['status'] = self.status.value
+        return tempdic
 
     @staticmethod
     def from_json(pos_json):
         pos = Position("", 0, 0, 0, 0)
         for prop in pos.__dict__.keys():
             setattr(pos, prop, pos_json[prop])
+        state= PositionStatus.MISSED
+        for status in PositionStatus:
+            if pos.status == status.value:
+                state = status
+                break
+        pos.status= state
         return pos
 
 
