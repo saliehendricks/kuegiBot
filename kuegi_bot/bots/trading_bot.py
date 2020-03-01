@@ -1,4 +1,5 @@
-from kuegi_bot.utils.trading_classes import Bar, Position, Symbol, OrderInterface, Account, OrderType, Order
+from kuegi_bot.utils.trading_classes import Bar, Position, Symbol, OrderInterface, Account, OrderType, Order, \
+    PositionStatus
 
 import plotly.graph_objects as go
 
@@ -153,7 +154,7 @@ class TradingBot:
         pass
 
     def handle_opened_position(self, position: Position, order: Order, account: Account, bars: List[Bar]):
-        position.status = "open"
+        position.status = PositionStatus.OPEN
         position.filled_entry = order.executed_price if order is not None else None
         position.entry_tstamp = order.execution_tstamp if order is not None else bars[0].tstamp
 
@@ -172,13 +173,13 @@ class TradingBot:
             if position is not None:
                 orderType = self.order_type_from_order_id(order.id)
                 if orderType == OrderType.ENTRY and (
-                        position.status == "pending" or position.status == "triggered"):
+                        position.status == PositionStatus.PENDING or position.status == PositionStatus.TRIGGERED):
                     self.logger.info("position %s got opened" % position.id)
                     self.handle_opened_position(position=position, order=order, account=account, bars=bars)
 
-                elif (orderType == OrderType.SL or orderType == OrderType.TP) and position.status == "open":
+                elif (orderType == OrderType.SL or orderType == OrderType.TP) and position.status == PositionStatus.OPEN:
                     self.logger.info("position %s got closed" % position.id)
-                    position.status = "closed"
+                    position.status = PositionStatus.CLOSED
                     position.filled_exit = order.executed_price
                     position.exit_tstamp = order.execution_tstamp
                     position.exit_equity = account.equity
@@ -202,7 +203,7 @@ class TradingBot:
     def sync_positions_with_open_orders(self, bars: List[Bar], account: Account):
         open_pos = 0
         for pos in self.open_positions.values():
-            if pos.status == "open":
+            if pos.status == PositionStatus.OPEN:
                 open_pos += pos.amount
 
         if not self.got_data_for_position_sync(bars):
@@ -226,8 +227,12 @@ class TradingBot:
             posId = self.position_id_from_order_id(order.id)
             if posId in self.open_positions.keys():
                 remaining_orders.remove(order)
-                if posId in remaining_pos_ids and orderType == OrderType.SL: # only remove from remaining if its SL. every position needs a stoploss!
-                    remaining_pos_ids.remove(posId)
+                if posId in remaining_pos_ids:
+                    pos= self.open_positions[posId]
+                    if (orderType == OrderType.SL and pos.stats == PositionStatus.OPEN) \
+                        or (orderType == OrderType.ENTRY and pos.status == PositionStatus.PENDING):
+                        # only remove from remaining if its open with SL or pending with entry. every position needs a stoploss!
+                        remaining_pos_ids.remove(posId)
 
         if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and abs(
                 open_pos - account.open_position.quantity) < 0.1:
@@ -242,7 +247,7 @@ class TradingBot:
 
         remainingPosition = account.open_position.quantity
         for pos in self.open_positions.values():
-            if pos.status == "open":
+            if pos.status == Position:
                 remainingPosition -= pos.amount
 
         waiting_tps = []
@@ -263,7 +268,7 @@ class TradingBot:
                                       amount=order.amount,
                                       stop=stop,
                                       tstamp=bars[0].tstamp)
-                    newPos.status = "pending" if not order.stop_triggered else "triggered"
+                    newPos.status = PositionStatus.PENDING if not order.stop_triggered else PositionStatus.TRIGGERED
                     self.open_positions[posId] = newPos
                     self.logger.warn("found unknown entry %s %.1f @ %.1f, added position"
                                      % (order.id, order.amount,
@@ -280,7 +285,7 @@ class TradingBot:
                 # otherwise it might be a pending cancel (from executed TP) or already executed
                 newPos = Position(id=posId, entry=None, amount=-order.amount,
                                   stop=order.stop_price, tstamp=bars[0].tstamp)
-                newPos.status = "open"
+                newPos.status = PositionStatus.OPEN
                 remainingPosition -= newPos.amount
                 self.open_positions[posId] = newPos
                 self.logger.warn("found unknown exit %s %.1f @ %.1f, opened position for it" % (
@@ -305,7 +310,7 @@ class TradingBot:
         # positions with no exit in the market
         for posId in remaining_pos_ids:
             pos = self.open_positions[posId]
-            if pos.status == "pending" or pos.status == "triggered":
+            if pos.status == PositionStatus.PENDING or pos.status == PositionStatus.TRIGGERED:
                 # should have the opening order in the system, but doesn't
                 # not sure why: in doubt: not create wrong orders
                 if remainingPosition * pos.amount > 0 and abs(remainingPosition) > abs(pos.amount):
@@ -313,9 +318,9 @@ class TradingBot:
                     self.handle_opened_position(position=pos, order=None, bars=bars, account=account)
                     remainingPosition -= pos.amount
                 else:
-                    pos.status = "missed"
+                    pos.status = PositionStatus.MISSED
                     self.position_closed(pos, account)
-            elif pos.status == "open":
+            elif pos.status == PositionStatus.OPEN:
                 if remainingPosition == 0 and pos.initial_stop is not None: # for some reason everything matches but we are missing the stop in the market
                     self.logger.warn("found position with no stop in market. added stop for it: %s with %.1f contracts" % (posId,pos.amount))
                     self.order_interface.send_order(
@@ -337,7 +342,7 @@ class TradingBot:
                                          PositionDirection.LONG if remainingPosition > 0 else PositionDirection.SHORT)
                 newPos = Position(id=posId, entry=None, amount=remainingPosition,
                                   stop=unmatched_stop, tstamp=bars[0].tstamp)
-                newPos.status = "open"
+                newPos.status = PositionStatus.OPEN
                 self.open_positions[posId] = newPos
                 # add stop
                 self.logger.info(
@@ -591,7 +596,7 @@ class TradingBot:
         self.logger.info("adding trades")
         # trades
         for pos in self.position_history:
-            if pos.status == "closed":
+            if pos.status == PositionStatus.CLOSED:
                 fig.add_shape(go.layout.Shape(
                     type="line",
                     x0=datetime.fromtimestamp(pos.entry_tstamp),
@@ -604,7 +609,7 @@ class TradingBot:
                         dash="solid"
                     )
                 ))
-            if pos.status == "notFilled":
+            if pos.status == PositionStatus.MISSED:
                 fig.add_shape(go.layout.Shape(
                     type="line",
                     x0=datetime.fromtimestamp(pos.signal_tstamp),

@@ -1,6 +1,6 @@
 from kuegi_bot.bots.bot_with_channel import BotWithChannel
 from kuegi_bot.bots.trading_bot import PositionDirection
-from kuegi_bot.utils.trading_classes import Position, Order, Account, Bar, Symbol, OrderType
+from kuegi_bot.utils.trading_classes import Position, Order, Account, Bar, Symbol, OrderType, PositionStatus
 from kuegi_bot.kuegi_channel import Data, clean_range
 import math
 from typing import List
@@ -56,11 +56,11 @@ class KuegiBot(BotWithChannel):
         # cancel marked positions
         pos_ids_to_cancel = []
         for p in self.open_positions.values():
-            if hasattr(p, "markForCancel") and p.status == "pending" and (
+            if hasattr(p, "markForCancel") and p.status == PositionStatus.PENDING and (
                     not self.delayed_cancel or p.markForCancel < bars[0].tstamp):
                 self.logger.info("canceling position caused marked for cancel: " + p.id)
                 self.cancel_all_orders_for_position(p.id, account)
-                p.status = "cancelled"
+                p.status = PositionStatus.CANCELLED
                 pos_ids_to_cancel.append(p.id)
 
         for key in pos_ids_to_cancel:
@@ -81,20 +81,20 @@ class KuegiBot(BotWithChannel):
                 if other_id in self.open_positions.keys():
                     self.open_positions[other_id].markForCancel = bars[0].tstamp
 
-                pos.status = "triggered"
+                pos.status = PositionStatus.TRIGGERED
                 if not hasattr(pos, 'waitingToFillSince'):
                     pos.waitingToFillSince = bars[0].tstamp
                 if (bars[0].tstamp - pos.waitingToFillSince) > self.bars_till_cancel_triggered * (
                         bars[0].tstamp - bars[1].tstamp):
                     # cancel
-                    pos.status = "notFilled"
+                    pos.status = PositionStatus.MISSED
                     pos.exit_tstamp = bars[0].tstamp
                     super().position_closed(pos, account)
                     self.logger.info("canceling not filled position: " + pos.id)
                     to_cancel.append(order)
 
             if orderType == OrderType.ENTRY and (data.longSwing is None or data.shortSwing is None):
-                if pos.status == "pending":  # don't delete if triggered
+                if pos.status == PositionStatus.PENDING:  # don't delete if triggered
                     self.logger.info("canceling cause channel got invalid: " + pos.id)
                     to_cancel.append(order)
                     del self.open_positions[pos.id]
@@ -146,7 +146,7 @@ class KuegiBot(BotWithChannel):
                 foundLong = False
                 foundShort = False
                 for position in self.open_positions.values():
-                    if position.status == "pending":
+                    if position.status == PositionStatus.PENDING:
                         if position.amount > 0:
                             foundLong = True
                             entry = longEntry

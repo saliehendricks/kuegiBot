@@ -130,12 +130,20 @@ class OrderInterface:
     def cancel_order(self, order: Order):
         pass
 
+class PositionStatus(Enum):
+    PENDING = "pending"
+    TRIGGERED = "triggered"
+    OPEN = "open"
+    CLOSED = "closed"
+    MISSED = "missed"
+    CANCELLED = "cancelled"
+
 
 class Position:
     def __init__(self, id: str, entry: float, stop: float, amount: float, tstamp):
         self.id: str = id
         self.signal_tstamp = tstamp
-        self.status = "pending"
+        self.status: PositionStatus = PositionStatus.PENDING
         self.wanted_entry = entry
         self.initial_stop = stop
         self.amount = amount

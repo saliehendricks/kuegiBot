@@ -5,7 +5,7 @@ from typing import List
 from kuegi_bot.bots.strategies.channel_strat import ChannelStrategy
 from kuegi_bot.bots.trading_bot import TradingBot, PositionDirection
 from kuegi_bot.kuegi_channel import Data, clean_range
-from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position, Order
+from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position, Order, PositionStatus
 
 
 class KuegiStrategy(ChannelStrategy):
@@ -66,30 +66,30 @@ class KuegiStrategy(ChannelStrategy):
             if other_id in open_positions.keys():
                 open_positions[other_id].markForCancel = bars[0].tstamp
 
-            position.status = "triggered"
+            position.status = PositionStatus.TRIGGERED
             if not hasattr(position, 'waitingToFillSince'):
                 position.waitingToFillSince = bars[0].tstamp
             if (bars[0].tstamp - position.waitingToFillSince) > self.bars_till_cancel_triggered * (
                     bars[0].tstamp - bars[1].tstamp):
                 # cancel
-                position.status = "notFilled"
+                position.status = PositionStatus.MISSED
                 position.exit_tstamp = bars[0].tstamp
                 del open_positions[position.id]
                 self.logger.info("canceling not filled position: " + position.id)
                 to_cancel.append(order)
 
         if orderType == OrderType.ENTRY and (data.longSwing is None or data.shortSwing is None):
-            if position.status == "pending":  # don't delete if triggered
+            if position.status == PositionStatus.PENDING:  # don't delete if triggered
                 self.logger.info("canceling cause channel got invalid: " + position.id)
                 to_cancel.append(order)
                 del open_positions[position.id]
 
     def manage_open_position(self, p, bars, account, pos_ids_to_cancel):
         # cancel marked positions
-        if hasattr(p, "markForCancel") and p.status == "pending" and (
+        if hasattr(p, "markForCancel") and p.status == PositionStatus.PENDING and (
                 not self.delayed_cancel or p.markForCancel < bars[0].tstamp):
             self.logger.info("canceling position caused marked for cancel: " + p.id)
-            p.status = "cancelled"
+            p.status = PositionStatus.CANCELLED
             pos_ids_to_cancel.append(p.id)
 
     def open_orders(self, is_new_bar, directionFilter, bars, account, open_positions):
@@ -137,7 +137,7 @@ class KuegiStrategy(ChannelStrategy):
                 foundLong = False
                 foundShort = False
                 for position in open_positions.values():
-                    if position.status == "pending":
+                    if position.status == PositionStatus.PENDING:
                         if position.amount > 0:
                             foundLong = True
                             entry = longEntry

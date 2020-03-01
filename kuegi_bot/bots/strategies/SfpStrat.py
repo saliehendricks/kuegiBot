@@ -4,7 +4,7 @@ from typing import List
 from kuegi_bot.bots.strategies.channel_strat import ChannelStrategy
 from kuegi_bot.bots.trading_bot import TradingBot, PositionDirection
 from kuegi_bot.kuegi_channel import Data, clean_range
-from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position, Order
+from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position, Order, PositionStatus
 
 
 class SfpStrategy(ChannelStrategy):
@@ -102,7 +102,7 @@ class SfpStrategy(ChannelStrategy):
             # close existing short pos
             if self.close_on_opposite:
                 for pos in open_positions.values():
-                    if pos.status == "open" and TradingBot.split_pos_Id(pos.id)[1] == PositionDirection.LONG:
+                    if pos.status == PositionStatus.OPEN and TradingBot.split_pos_Id(pos.id)[1] == PositionDirection.LONG:
                         # execution will trigger close and cancel of other orders
                         self.order_interface.send_order(
                             Order(orderId=TradingBot.generate_order_id(pos.id, OrderType.SL),
@@ -132,7 +132,7 @@ class SfpStrategy(ChannelStrategy):
                 tp = entry - (stop - entry) * self.tp_fac
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
-            pos.status= "open"
+            pos.status= PositionStatus.OPEN
         # LONG
         shortSFP = self.entries != 1 and gotLowSwing and bars[1].close - data.buffer > swingLow
         shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > maxLength / 2 \
@@ -142,7 +142,7 @@ class SfpStrategy(ChannelStrategy):
             # close existing short pos
             if self.close_on_opposite:
                 for pos in open_positions.values():
-                    if pos.status == "open" and TradingBot.split_pos_Id(pos.id)[1] == PositionDirection.SHORT:
+                    if pos.status == PositionStatus.OPEN and TradingBot.split_pos_Id(pos.id)[1] == PositionDirection.SHORT:
                         # execution will trigger close and cancel of other orders
                         self.order_interface.send_order(
                             Order(orderId=TradingBot.generate_order_id(pos.id, OrderType.SL),
@@ -173,5 +173,5 @@ class SfpStrategy(ChannelStrategy):
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
 
-            pos.status= "open"
+            pos.status= PositionStatus.OPEN
             pos.entry_tstamp = pos.signal_tstamp

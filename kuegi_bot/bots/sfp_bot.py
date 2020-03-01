@@ -5,7 +5,7 @@ from typing import List
 from kuegi_bot.bots.bot_with_channel import BotWithChannel
 from kuegi_bot.bots.trading_bot import PositionDirection
 from kuegi_bot.kuegi_channel import Data, clean_range
-from kuegi_bot.utils.trading_classes import Position, Order, Account, Bar, OrderType
+from kuegi_bot.utils.trading_classes import Position, Order, Account, Bar, OrderType, PositionStatus
 
 
 class SfpBot(BotWithChannel):
@@ -104,7 +104,7 @@ class SfpBot(BotWithChannel):
             # close existing short pos
             if self.close_on_opposite:
                 for pos in self.open_positions.values():
-                    if pos.status == "open" and self.split_pos_Id(pos.id)[1] == PositionDirection.LONG:
+                    if pos.status == PositionStatus.OPEN and self.split_pos_Id(pos.id)[1] == PositionDirection.LONG:
                         # execution will trigger close and cancel of other orders
                         self.order_interface.send_order(Order(orderId=self.generate_order_id(pos.id, OrderType.SL),
                                                               amount=-pos.amount, stop=None, limit=None))
@@ -141,7 +141,7 @@ class SfpBot(BotWithChannel):
             # close existing short pos
             if self.close_on_opposite:
                 for pos in self.open_positions.values():
-                    if pos.status == "open" and self.split_pos_Id(pos.id)[1] == PositionDirection.SHORT:
+                    if pos.status == PositionStatus.OPEN and self.split_pos_Id(pos.id)[1] == PositionDirection.SHORT:
                         # execution will trigger close and cancel of other orders
                         self.order_interface.send_order(Order(orderId=self.generate_order_id(pos.id, OrderType.SL),
                                                               amount=-pos.amount, stop=None, limit=None))
