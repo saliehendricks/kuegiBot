@@ -177,7 +177,8 @@ class TradingBot:
                     self.logger.info("position %s got opened" % position.id)
                     self.handle_opened_position(position=position, order=order, account=account, bars=bars)
 
-                elif (orderType == OrderType.SL or orderType == OrderType.TP) and position.status == PositionStatus.OPEN:
+                elif (
+                        orderType == OrderType.SL or orderType == OrderType.TP) and position.status == PositionStatus.OPEN:
                     self.logger.info("position %s got closed" % position.id)
                     position.status = PositionStatus.CLOSED
                     position.filled_exit = order.executed_price
@@ -219,7 +220,7 @@ class TradingBot:
         for order in account.open_orders:
             if not order.active:
                 remaining_orders.remove(order)
-                continue # got cancelled during run
+                continue  # got cancelled during run
             orderType = self.order_type_from_order_id(order.id)
             if orderType is None:
                 remaining_orders.remove(order)
@@ -228,10 +229,11 @@ class TradingBot:
             if posId in self.open_positions.keys():
                 remaining_orders.remove(order)
                 if posId in remaining_pos_ids:
-                    pos= self.open_positions[posId]
-                    if (orderType == OrderType.SL and pos.stats == PositionStatus.OPEN) \
-                        or (orderType == OrderType.ENTRY and pos.status == PositionStatus.PENDING):
-                        # only remove from remaining if its open with SL or pending with entry. every position needs a stoploss!
+                    pos = self.open_positions[posId]
+                    if (orderType == OrderType.SL and pos.status == PositionStatus.OPEN) \
+                            or (orderType == OrderType.ENTRY and pos.status == PositionStatus.PENDING):
+                        # only remove from remaining if its open with SL or pending with entry. every position needs
+                        # a stoploss!
                         remaining_pos_ids.remove(posId)
 
         if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and abs(
@@ -244,10 +246,9 @@ class TradingBot:
                              len(account.open_orders),
                              len(remaining_orders), len(remaining_pos_ids)))
 
-
         remainingPosition = account.open_position.quantity
         for pos in self.open_positions.values():
-            if pos.status == Position:
+            if pos.status == PositionStatus.OPEN:
                 remainingPosition -= pos.amount
 
         waiting_tps = []
@@ -256,7 +257,7 @@ class TradingBot:
         for order in remaining_orders:
             orderType = self.order_type_from_order_id(order.id)
             posId = self.position_id_from_order_id(order.id)
-            if not order.active: # already canceled or executed
+            if not order.active:  # already canceled or executed
                 continue
 
             if orderType == OrderType.ENTRY:
@@ -280,7 +281,8 @@ class TradingBot:
                            order.stop_price if order.stop_price is not None else order.limit_price))
                     self.order_interface.cancel_order(order)
 
-            elif orderType == OrderType.SL and remainingPosition*order.amount < 0 and abs(remainingPosition) > abs(order.amount):
+            elif orderType == OrderType.SL and remainingPosition * order.amount < 0 and abs(remainingPosition) > abs(
+                    order.amount):
                 # only assume open position for the waiting SL with the remainingPosition also indicates it, 
                 # otherwise it might be a pending cancel (from executed TP) or already executed
                 newPos = Position(id=posId, entry=None, amount=-order.amount,
@@ -291,14 +293,14 @@ class TradingBot:
                 self.logger.warn("found unknown exit %s %.1f @ %.1f, opened position for it" % (
                     order.id, order.amount,
                     order.stop_price if order.stop_price is not None else order.limit_price))
-            else :
+            else:
                 waiting_tps.append(order)
 
         # cancel orphaned TPs
         for order in waiting_tps:
             orderType = self.order_type_from_order_id(order.id)
             posId = self.position_id_from_order_id(order.id)
-            if posId not in self.open_positions.keys(): # still not in (might have been added in previous for)
+            if posId not in self.open_positions.keys():  # still not in (might have been added in previous for)
                 self.logger.warn(
                     "didn't find matching position for order %s %.1f @ %.1f -> canceling"
                     % (order.id, order.amount,
@@ -321,19 +323,23 @@ class TradingBot:
                     pos.status = PositionStatus.MISSED
                     self.position_closed(pos, account)
             elif pos.status == PositionStatus.OPEN:
-                if remainingPosition == 0 and pos.initial_stop is not None: # for some reason everything matches but we are missing the stop in the market
-                    self.logger.warn("found position with no stop in market. added stop for it: %s with %.1f contracts" % (posId,pos.amount))
+                if remainingPosition == 0 and pos.initial_stop is not None:  # for some reason everything matches but we are missing the stop in the market
+                    self.logger.warn(
+                        "found position with no stop in market. added stop for it: %s with %.1f contracts" % (
+                        posId, pos.amount))
                     self.order_interface.send_order(
                         Order(orderId=self.generate_order_id(posId, OrderType.SL), amount=-pos.amount,
                               stop=pos.initial_stop))
                 else:
-                    self.logger.warn("found position with no stop in market. %s with %.1f contracts. but remaining Position doesn't match so assume it was already closed." % (posId,pos.amount))
+                    self.logger.warn(
+                        "found position with no stop in market. %s with %.1f contracts. but remaining Position doesn't match so assume it was already closed." % (
+                        posId, pos.amount))
                     self.position_closed(pos, account)
                     remainingPosition += pos.amount
             else:
                 self.position_closed(pos, account)
 
-# now there should not be any mismatch between positions and orders.
+        # now there should not be any mismatch between positions and orders.
         if remainingPosition != 0:
             unmatched_stop = self.get_stop_for_unmatched_amount(remainingPosition, bars)
             signalId = str(bars[1].tstamp) + '+' + str(randint(0, 99))

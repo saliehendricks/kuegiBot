@@ -1,0 +1,84 @@
+{
+  "LOOP_INTERVAL": 30,
+  "API_REST_INTERVAL": 1,
+  "API_ERROR_INTERVAL": 10,
+  "TIMEOUT": 7,
+  "LOG_LEVEL": "INFO",
+  "LOG_TO_CONSOLE": true,
+  "LOG_TO_FILE": false,
+  "IS_TEST": true,
+  "MINUTES_PER_BAR": 240,
+  "bots": [
+    {
+      "id": "bybit",
+      "EXCHANGE": "bybit",
+      "API_KEY": "",
+      "API_SECRET": "",
+      "SYMBOL": "BTCUSD",
+      "KB_RISK_FACTOR": 0,
+      "KB_MAX_LOOK_BACK": 13,
+      "KB_THRESHOLD_FACTOR": 0.8,
+      "KB_BUFFER_FACTOR": 0.05,
+      "KB_MAX_DIST_FACTOR": 2,
+      "KB_MAX_SWING_LENGTH": 4,
+      "KB_ALLOW_TRAIL_BACK": false,
+      "KB_TRAIL_TO_SWING": false,
+      "KB_DELAYED_ENTRY": true,
+      "strategies": {
+        "kuegi": {
+          "KB_MIN_CHANNEL_SIZE_FACTOR": 0,
+          "KB_MAX_CHANNEL_SIZE_FACTOR": 16,
+          "KB_RISK_TYPE": 1,
+          "KB_MAX_RISK_MUL": 2,
+          "KB_ENTRY_TIGHTENING": 1,
+          "KB_BARS_TILL_CANCEL_TRIGGERED": 5,
+          "KB_BE_FACTOR": 1,
+          "KB_BE_BUFFER": 0.4,
+          "KB_STOP_ENTRY": true,
+          "KB_DELAYED_CANCEL": true
+        },
+        "sfp": {
+          "KB_RISK_TYPE": 0,
+          "KB_MAX_RISK_MUL": 2,
+          "KB_BE_FACTOR": 1,
+          "KB_BE_BUFFER": 0.3,
+          "SFP_STOP_TYPE":1,
+          "SFP_TP_FAC":10,
+          "SFP_MIN_WICK_FAC":0.5,
+          "SFP_MIN_SWING_LENGTH":11,
+          "SFP_RANGE_LENGTH":70,
+          "SFP_RANGE_FILTER_FAC":0,
+          "SFP_CLOSE_ON_OPPOSITE":false
+        }
+      }
+    },{
+      "id": "bitmex",
+      "EXCHANGE": "bitmex",
+      "API_KEY": "",
+      "API_SECRET": "",
+      "SYMBOL": "XBTUSD",
+      "KB_MAX_LOOK_BACK": 13,
+      "KB_THRESHOLD_FACTOR": 2.5,
+      "KB_BUFFER_FACTOR": -0.0618,
+      "KB_MAX_DIST_FACTOR": 1,
+      "KB_MAX_SWING_LENGTH": 4,
+      "KB_MIN_CHANNEL_SIZE_FACTOR": 1.618,
+      "KB_MAX_CHANNEL_SIZE_FACTOR": 16,
+      "KB_RISK_FACTOR":0,
+      "KB_RISK_TYPE": 0,
+      "KB_MAX_RISK_MUL": 2,
+      "KB_ENTRY_TIGHTENING": 0.1,
+      "KB_BARS_TILL_CANCEL_TRIGGERED": 3,
+      "KB_BE_FACTOR": 2,
+      "KB_BE_BUFFER": 0.4,
+      "KB_ALLOW_TRAIL_BACK": true,
+      "KB_STOP_ENTRY": true,
+      "KB_TRAIL_TO_SWING": false,
+      "KB_DELAYED_ENTRY": false,
+      "KB_DELAYED_CANCEL": true,
+      "CONTRACTS": [
+        "XBTUSD"
+      ]
+    }
+  ]
+}

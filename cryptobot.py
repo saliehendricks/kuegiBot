@@ -25,6 +25,10 @@ def start_bot(botSettings):
             stratSettings = dict(botSettings)
             stratSettings = dotdict(stratSettings)
             stratSettings.update(strategies[stratId])
+            if stratSettings.KB_RISK_FACTOR <= 0:
+                logger.error("if you don't want to risk money, you shouldn't even run this bot!")
+                continue
+
             if stratId == "kuegi":
                 bot.add_strategy(
                     KuegiStrategy(min_channel_size_factor=stratSettings.KB_MIN_CHANNEL_SIZE_FACTOR,
@@ -43,7 +47,7 @@ def start_bot(botSettings):
                                 risk_type=stratSettings.KB_RISK_TYPE,
                                 max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
                         .withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
-                                                     buffer=stratSettings.KB_BE_BUFFER))
+                                                 buffer=stratSettings.KB_BE_BUFFER))
                         .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
                                    delayed_swing=stratSettings.KB_DELAYED_ENTRY,
                                    trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
@@ -57,24 +61,27 @@ def start_bot(botSettings):
                                 range_length=stratSettings.SFP_RANGE_LENGTH,
                                 range_filter_fac=stratSettings.SFP_RANGE_FILTER_FAC,
                                 close_on_opposite=stratSettings.SFP_CLOSE_ON_OPPOSITE)
-                    .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
-                                 threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
-                                 buffer_factor=stratSettings.KB_BUFFER_FACTOR,
-                                 max_dist_factor=stratSettings.KB_MAX_DIST_FACTOR,
-                                 max_swing_length=stratSettings.KB_MAX_SWING_LENGTH)
-                    .withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
-                            risk_type=stratSettings.KB_RISK_TYPE,
-                            max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
-                    .withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
+                        .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
+                                     threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
+                                     buffer_factor=stratSettings.KB_BUFFER_FACTOR,
+                                     max_dist_factor=stratSettings.KB_MAX_DIST_FACTOR,
+                                     max_swing_length=stratSettings.KB_MAX_SWING_LENGTH)
+                        .withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
+                                risk_type=stratSettings.KB_RISK_TYPE,
+                                max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
+                        .withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
                                                  buffer=stratSettings.KB_BE_BUFFER))
-                    .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
-                               delayed_swing=stratSettings.KB_DELAYED_ENTRY,
-                               trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
-                    )
+                        .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
+                                   delayed_swing=stratSettings.KB_DELAYED_ENTRY,
+                                   trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
+                )
             else:
-                logger.warn("unkown strategy: "+stratId)
+                logger.warn("unkown strategy: " + stratId)
     else:
-        bot.add_strategy(KuegiStrategy(min_channel_size_factor=botSettings.KB_MIN_CHANNEL_SIZE_FACTOR,
+        if botSettings.KB_RISK_FACTOR <= 0:
+            logger.error("if you don't want to risk money, you shouldn't even run this bot!")
+        else:
+            bot.add_strategy(KuegiStrategy(min_channel_size_factor=botSettings.KB_MIN_CHANNEL_SIZE_FACTOR,
                                        max_channel_size_factor=botSettings.KB_MAX_CHANNEL_SIZE_FACTOR,
                                        entry_tightening=botSettings.KB_ENTRY_TIGHTENING,
                                        bars_till_cancel_triggered=botSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
@@ -90,12 +97,12 @@ def start_bot(botSettings):
                                  risk_type=botSettings.KB_RISK_TYPE,
                                  max_risk_mul=botSettings.KB_MAX_RISK_MUL)
                          .withExitModule(SimpleBE(factor=botSettings.KB_BE_FACTOR,
-                                                      buffer=botSettings.KB_BE_BUFFER))
+                                                  buffer=botSettings.KB_BE_BUFFER))
                          .withTrail(trail_to_swing=botSettings.KB_TRAIL_TO_SWING,
                                     delayed_swing=botSettings.KB_DELAYED_ENTRY,
                                     trail_back=botSettings.KB_ALLOW_TRAIL_BACK)
-        )
-    live = LiveTrading(settings=botSettings,trading_bot=bot)
+                         )
+    live = LiveTrading(settings=botSettings, trading_bot=bot)
     t = threading.Thread(target=live.run_loop)
     t.bot: LiveTrading = live
     t.start()
@@ -117,47 +124,57 @@ def term_handler(signum, frame):
     stop_all_and_exit()
 
 
-activeThreads: List[threading.Thread] = []
+def run(settings):
+    signal.signal(signal.SIGTERM, term_handler)
+    signal.signal(signal.SIGINT, term_handler)
+    atexit.register(stop_all_and_exit)
 
-signal.signal(signal.SIGTERM, term_handler)
-signal.signal(signal.SIGINT, term_handler)
-atexit.register(stop_all_and_exit)
+    if not settings:
+        print("error: no settings defined. nothing to do. exiting")
+        sys.exit()
 
-settings = load_settings_from_args()
+    logger.info("###### loading %i bots #########" % len(settings.bots))
+    if settings.bots is not None:
+        sets = settings.bots[:]
+        del settings.bots  # settings is now just the meta settings
+        for botSetting in sets:
+            usedSettings = dict(settings)
+            usedSettings = dotdict(usedSettings)
+            usedSettings.update(botSetting)
+            if len(usedSettings.API_KEY) == 0 or len(usedSettings.API_SECRET) == 0:
+                logger.error("You have to put in apiKey and secret before starting!")
+            else:
+                logger.info("starting " + usedSettings.id)
+                activeThreads.append(start_bot(usedSettings))
 
-if not settings:
-    print("error: no settings defined. nothing to do. exiting")
-    sys.exit()
+    logger.info("init done")
 
-logger = log.setup_custom_logger("cryptobot",
-                                 log_level=settings.LOG_LEVEL,
-                                 logToConsole=settings.LOG_TO_CONSOLE,
-                                 logToFile=settings.LOG_TO_FILE)
-logger.info("###### loading %i bots #########" % len(settings.bots))
-if settings.bots is not None:
-    sets = settings.bots[:]
-    del settings.bots  # settings is now just the meta settings
-    for botSetting in sets:
-        usedSettings = dict(settings)
-        usedSettings = dotdict(usedSettings)
-        usedSettings.update(botSetting)
-        logger.info("starting " + usedSettings.id)
-        activeThreads.append(start_bot(usedSettings))
+    if len(activeThreads) > 0:
+        while True:
+            sleep(1)
+            allActive = True
+            for thread in activeThreads:
+                if not thread.is_alive() or not thread.bot.alive:
+                    allActive = False
+                    logger.info("%s died." % thread.bot.id)
+                    break
 
-logger.info("init done")
-
-if len(activeThreads) > 0:
-    while True:
-        sleep(1)
-        allActive = True
-        for thread in activeThreads:
-            if not thread.is_alive() or not thread.bot.alive:
-                allActive = False
-                logger.info("%s died." % thread.bot.id)
+            if not allActive:
+                stop_all_and_exit()
                 break
+    else:
+        logger.warn("no bots defined. nothing to do")
 
-        if not allActive:
-            stop_all_and_exit()
-            break
+
+activeThreads: List[threading.Thread] = []
+logger = None
+
+if __name__ == '__main__':
+    settings = load_settings_from_args()
+    logger = log.setup_custom_logger("cryptobot",
+                                     log_level=settings.LOG_LEVEL,
+                                     logToConsole=settings.LOG_TO_CONSOLE,
+                                     logToFile=settings.LOG_TO_FILE)
+    run(settings)
 else:
-    logger.warn("no bots defined. nothing to do")
+    logger = log.setup_custom_logger("cryptobot-pkg")

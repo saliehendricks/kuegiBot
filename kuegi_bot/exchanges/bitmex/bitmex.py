@@ -27,8 +27,7 @@ class BitMEX(object):
         self.symbol = symbol
         self.postOnly = postOnly
         if (apiKey is None):
-            raise Exception("Please set an API key and Secret to get started. See " +
-                            "https://github.com/BitMEX/sample-market-maker/#getting-started for more information."
+            raise Exception("Please set an API key and Secret to get started."
                             )
         self.apiKey = apiKey
         self.apiSecret = apiSecret
@@ -37,7 +36,7 @@ class BitMEX(object):
         # Prepare HTTPS session
         self.session = requests.Session()
         # These headers are always sent
-        self.session.headers.update({'user-agent': 'liquidbot-' + constants.VERSION})
+        self.session.headers.update({'user-agent': 'kuegi-bot-'})
         self.session.headers.update({'content-type': 'application/json'})
         self.session.headers.update({'accept': 'application/json'})
 

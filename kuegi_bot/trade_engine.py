@@ -27,11 +27,13 @@ class LiveTrading(OrderInterface):
         self.exchange: ExchangeInterface = None
         if settings.EXCHANGE == 'bitmex':
             self.exchange = BitmexInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
-        else:
+        elif settings.EXCHANGE == 'bybit':
             self.exchange = ByBitInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
+        else:
+            self.logger.error("unkown exchange: "+settings.EXCHANGE)
+            self.alive= False
+            return
 
-        # Once exchange is created, register exit handler that will always cancel orders
-        # on any error.
         self.alive = True
 
         if self.exchange.is_open():

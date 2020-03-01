@@ -243,7 +243,7 @@ class BackTest(OrderInterface):
                     + " | rel: " + ("%.2f" % (rel_per_year))
                     + " | UW days: " + ("%.1f" % (self.max_underwater / uw_updates_per_day)))
 
-        self.write_results_to_files()
+        #self.write_results_to_files()
         return self
 
     def prepare_plot(self):

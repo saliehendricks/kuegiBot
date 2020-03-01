@@ -1,12 +1,11 @@
-/live.json
 *.pyc
 dist/
 *.egg-info/
 env
+venv/
 .idea/
 history/
 results/
 logs/
 openPositions/
-bybit.json
 settings/

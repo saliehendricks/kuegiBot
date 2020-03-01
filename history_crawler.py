@@ -1,4 +1,6 @@
 # importing the requests library
+import os
+
 import requests
 import json
 import math
@@ -26,12 +28,23 @@ start= 1 if exchange == 'bybit' else 0
 offset= 0
 
 #init
+# TODO: adapt this to your number if you already have history files
 lastknown= 12 if exchange == 'bybit' else 45
+
+try:
+    os.makedirs('history/'+exchange)
+except Exception:
+    pass
+
 if lastknown >= 0:
-    with open('history/'+exchange+'/M1_' + str(lastknown) + '.json', 'r') as file:
-        result = json.load(file)
-        start = int(result[-1]['open_time']) + 1 if exchange == 'bybit' else lastknown * batchsize + len(result)
-        offset= lastknown*batchsize
+    try:
+        with open('history/'+exchange+'/M1_' + str(lastknown) + '.json', 'r') as file:
+            result = json.load(file)
+            start = int(result[-1]['open_time']) + 1 if exchange == 'bybit' else lastknown * batchsize + len(result)
+            offset= lastknown*batchsize
+    except:
+        print("lier! you didn't have any history yet!")
+        lastknown = 0
 
 wroteData= False
 lastSync= 0
