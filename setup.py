@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from setuptools import setup
+from setuptools import setup, find_packages
 from os.path import dirname, join
 
 import kuegi_bot
@@ -23,9 +23,7 @@ setup(name='kuegi-bot',
           'plotly',
           'bybit'
       ],
-      packages=['kuegi_bot',
-                'kuegi_bot.bots', 'kuegi_bot.utils', 'kuegi_bot.exchange'],
-      entry_points={
-          'console_scripts': ['cryptobot = cryptobot:run']
-      }
+      packages=find_packages(),
+      scripts=["backtest.py","history_crawler.py","cryptobot.py"],
+      classifiers=["Development Status :: 3 - Alpha" ]
       )
