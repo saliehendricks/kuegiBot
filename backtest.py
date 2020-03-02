@@ -88,7 +88,7 @@ bot.add_strategy(KuegiStrategy(
                  )
 BackTest(bot, bars_b).run()
 
-good be levels kuegi:
+good be levels kuegi: 5/-1 10/5 13/8 15/11
 
 # 5 0 10 5 -> 10.76
 

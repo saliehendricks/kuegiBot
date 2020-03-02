@@ -29,7 +29,7 @@ offset= 0
 
 #init
 # TODO: adapt this to your number if you already have history files
-lastknown= 12 if exchange == 'bybit' else 45
+lastknown= 13 if exchange == 'bybit' else 45
 
 try:
     os.makedirs('history/'+exchange)
@@ -71,7 +71,7 @@ while True:
         lastSync += len(data)
         start = int(data[-1]['open_time'])+1 if exchange == 'bybit' else start + len(data)
 
-    if lastSync > 15000 or (len(data) < 10 and not wroteData):
+    if lastSync > 15000 or (len(data) < 200 and not wroteData):
         wroteData= True
         lastSync= 0
         max= math.ceil((len(result)+offset)/batchsize)

@@ -172,8 +172,8 @@ class TradingBot:
 
             if position is not None:
                 orderType = self.order_type_from_order_id(order.id)
-                if orderType == OrderType.ENTRY and (
-                        position.status == PositionStatus.PENDING or position.status == PositionStatus.TRIGGERED):
+                if orderType == OrderType.ENTRY and position.status in [PositionStatus.PENDING, PositionStatus.TRIGGERED, PositionStatus.OPEN] :
+                    # position got opened, or was open but entry execution was late (in this case we still need to update the executed price.
                     self.logger.info("position %s got opened" % position.id)
                     self.handle_opened_position(position=position, order=order, account=account, bars=bars)
 

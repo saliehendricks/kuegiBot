@@ -163,6 +163,7 @@ class SfpStrategy(ChannelStrategy):
             posId = TradingBot.full_pos_id(signalId, PositionDirection.LONG)
             pos = Position(id=posId, entry=entry, amount=amount, stop=stop,
                                              tstamp=bars[0].tstamp)
+            pos.status= PositionStatus.TRIGGERED
             open_positions[posId]= pos
             self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.ENTRY),
                                                   amount=amount, stop=None, limit=None))
@@ -172,6 +173,3 @@ class SfpStrategy(ChannelStrategy):
                 tp = entry + (entry - stop) * self.tp_fac
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
-
-            pos.status= PositionStatus.OPEN
-            pos.entry_tstamp = pos.signal_tstamp
