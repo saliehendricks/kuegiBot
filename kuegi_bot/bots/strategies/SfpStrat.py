@@ -26,7 +26,10 @@ class SfpStrategy(ChannelStrategy):
         return "SFPStrategy"
 
     def init(self, bars: List[Bar], account: Account, symbol: Symbol):
-        self.logger.info("init with unkown params")
+        self.logger.info("init with %.1f %i %.1f | %i %i %.1f | %i %i" %
+                         (self.tp_fac,self.init_stop_type, self.min_wick_fac,
+                          self.min_swing_length, self.range_length, self.range_filter_fac,
+                          self.close_on_opposite, self.entries))
         super().init(bars, account, symbol)
 
     def owns_signal_id(self, signalId: str):
@@ -35,7 +38,7 @@ class SfpStrategy(ChannelStrategy):
     def open_orders(self, is_new_bar, directionFilter, bars, account, open_positions):
         if (not is_new_bar) or len(bars) < 5:
             return  # only open orders on beginning of bar
-        self.logger.info("---- analyzing: %s" %
+        self.logger.info("---- analyzing: %s: " %
                          (str(datetime.fromtimestamp(bars[0].tstamp))))
 
         atr = clean_range(bars, offset=0, length=self.channel.max_look_back * 2)
