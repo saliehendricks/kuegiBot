@@ -10,7 +10,7 @@ from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Pos
 class SfpStrategy(ChannelStrategy):
     def __init__(self, tp_fac: float = 0, init_stop_type: int = 0,
                  min_wick_fac: float = 0.2, min_swing_length: int = 2,
-                 range_length: int = 50, range_filter_fac: float = 0,
+                 range_length: int = 50, min_rej_length: int= 25, range_filter_fac: float = 0,
                  close_on_opposite: bool = False, entries: int = 0):
         super().__init__()
         self.min_wick_fac = min_wick_fac
@@ -18,6 +18,7 @@ class SfpStrategy(ChannelStrategy):
         self.init_stop_type = init_stop_type
         self.tp_fac = tp_fac
         self.range_length = range_length
+        self.min_rej_length= min_rej_length
         self.range_filter_fac = range_filter_fac
         self.close_on_opposite = close_on_opposite
         self.entries = entries
@@ -26,9 +27,9 @@ class SfpStrategy(ChannelStrategy):
         return "SFPStrategy"
 
     def init(self, bars: List[Bar], account: Account, symbol: Symbol):
-        self.logger.info("init with %.1f %i %.1f | %i %i %.1f | %i %i" %
+        self.logger.info("init with %.1f %i %.1f | %i %i %i %.1f | %i %i" %
                          (self.tp_fac,self.init_stop_type, self.min_wick_fac,
-                          self.min_swing_length, self.range_length, self.range_filter_fac,
+                          self.min_swing_length, self.range_length, self.min_rej_length, self.range_filter_fac,
                           self.close_on_opposite, self.entries))
         super().init(bars, account, symbol)
 
@@ -52,6 +53,7 @@ class SfpStrategy(ChannelStrategy):
 
         data: Data = self.channel.get_data(bars[1])
         maxLength = min(len(bars), self.range_length)
+        minRejLength = min(len(bars),self.min_rej_length)
         highSupreme = 0
         hhBack = 0
         hh = bars[2].high
@@ -99,7 +101,7 @@ class SfpStrategy(ChannelStrategy):
         # SHORT
         longSFP = self.entries != 1 and gotHighSwing and bars[1].close + data.buffer < swingHigh
         longRej = self.entries != 2 and bars[1].high > hh > bars[1].close + data.buffer and \
-                    highSupreme > maxLength / 2 and bars[1].high - bars[1].close > (bars[1].high - bars[1].low) / 2
+                    highSupreme > minRejLength and bars[1].high - bars[1].close > (bars[1].high - bars[1].low) / 2
         if (longSFP or longRej) and (bars[1].high - bars[1].close) > atr * self.min_wick_fac \
                 and directionFilter <= 0 and bars[1].high > rangeMedian + atr * self.range_filter_fac:
             # close existing short pos
@@ -138,7 +140,7 @@ class SfpStrategy(ChannelStrategy):
             pos.status= PositionStatus.OPEN
         # LONG
         shortSFP = self.entries != 1 and gotLowSwing and bars[1].close - data.buffer > swingLow
-        shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > maxLength / 2 \
+        shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > minRejLength \
                    and bars[1].close - bars[1].low > (bars[1].high - bars[1].low) / 2
         if (shortSFP or shortRej) and (bars[1].close - bars[1].low) > atr * self.min_wick_fac \
                 and directionFilter >= 0 and bars[1].low < rangeMedian - self.range_filter_fac:

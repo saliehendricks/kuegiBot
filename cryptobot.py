@@ -51,6 +51,7 @@ def start_bot(botSettings):
                                 min_wick_fac=stratSettings.SFP_MIN_WICK_FAC,
                                 min_swing_length=stratSettings.SFP_MIN_SWING_LENGTH,
                                 range_length=stratSettings.SFP_RANGE_LENGTH,
+                                min_rej_length=stratSettings.SFP_MIN_REJ_LENGTH,
                                 range_filter_fac=stratSettings.SFP_RANGE_FILTER_FAC,
                                 close_on_opposite=stratSettings.SFP_CLOSE_ON_OPPOSITE)\
                         .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
