@@ -64,6 +64,12 @@ class LiveTrading(OrderInterface):
     ###
 
     def send_order(self, order: Order):
+        if order.amount == 0:
+            self.logger.error("trying to send order without amount")
+            return
+        order.tstamp = self.bars[0].tstamp
+        if order not in self.account.open_orders:  # bot might add it himself temporarily.
+            self.account.open_orders.append(order)
         self.exchange.send_order(order)
 
     def update_order(self, order: Order):
