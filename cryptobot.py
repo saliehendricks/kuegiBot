@@ -30,45 +30,47 @@ def start_bot(botSettings):
                 continue
 
             if stratId == "kuegi":
-                    strat= KuegiStrategy(min_channel_size_factor=stratSettings.KB_MIN_CHANNEL_SIZE_FACTOR,
-                                  max_channel_size_factor=stratSettings.KB_MAX_CHANNEL_SIZE_FACTOR,
-                                  entry_tightening=stratSettings.KB_ENTRY_TIGHTENING,
-                                  bars_till_cancel_triggered=stratSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
-                                  stop_entry=stratSettings.KB_STOP_ENTRY,
-                                  delayed_entry=stratSettings.KB_DELAYED_ENTRY,
-                                  delayed_cancel=stratSettings.KB_DELAYED_CANCEL) \
-                        .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
-                                     threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
-                                     buffer_factor=stratSettings.KB_BUFFER_FACTOR,
-                                     max_dist_factor=stratSettings.KB_MAX_DIST_FACTOR,
-                                     max_swing_length=stratSettings.KB_MAX_SWING_LENGTH) \
-                        .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
-                                   delayed_swing=stratSettings.KB_DELAYED_ENTRY,
-                                   trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
+                strat = KuegiStrategy(min_channel_size_factor=stratSettings.KB_MIN_CHANNEL_SIZE_FACTOR,
+                                      max_channel_size_factor=stratSettings.KB_MAX_CHANNEL_SIZE_FACTOR,
+                                      entry_tightening=stratSettings.KB_ENTRY_TIGHTENING,
+                                      bars_till_cancel_triggered=stratSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
+                                      stop_entry=stratSettings.KB_STOP_ENTRY,
+                                      delayed_entry=stratSettings.KB_DELAYED_ENTRY,
+                                      delayed_cancel=stratSettings.KB_DELAYED_CANCEL) \
+                    .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
+                                 threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
+                                 buffer_factor=stratSettings.KB_BUFFER_FACTOR,
+                                 max_dist_factor=stratSettings.KB_MAX_DIST_FACTOR,
+                                 max_swing_length=stratSettings.KB_MAX_SWING_LENGTH)
+                if "KB_TRAIL_TO_SWING" in stratSettings.keys():
+                    strat.withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
+                                    delayed_swing=stratSettings.KB_DELAYED_ENTRY,
+                                    trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
             elif stratId == "sfp":
-                 strat= SfpStrategy(init_stop_type=stratSettings.SFP_STOP_TYPE,
-                                tp_fac=stratSettings.SFP_TP_FAC,
-                                min_wick_fac=stratSettings.SFP_MIN_WICK_FAC,
-                                min_swing_length=stratSettings.SFP_MIN_SWING_LENGTH,
-                                range_length=stratSettings.SFP_RANGE_LENGTH,
-                                min_rej_length=stratSettings.SFP_MIN_REJ_LENGTH,
-                                range_filter_fac=stratSettings.SFP_RANGE_FILTER_FAC,
-                                close_on_opposite=stratSettings.SFP_CLOSE_ON_OPPOSITE)\
-                        .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
-                                     threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
-                                     buffer_factor=stratSettings.KB_BUFFER_FACTOR,
-                                     max_dist_factor=stratSettings.KB_MAX_DIST_FACTOR,
-                                     max_swing_length=stratSettings.KB_MAX_SWING_LENGTH)\
-                        .withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
-                                   delayed_swing=stratSettings.KB_DELAYED_ENTRY,
-                                   trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
+                strat = SfpStrategy(init_stop_type=stratSettings.SFP_STOP_TYPE,
+                                    tp_fac=stratSettings.SFP_TP_FAC,
+                                    min_wick_fac=stratSettings.SFP_MIN_WICK_FAC,
+                                    min_swing_length=stratSettings.SFP_MIN_SWING_LENGTH,
+                                    range_length=stratSettings.SFP_RANGE_LENGTH,
+                                    min_rej_length=stratSettings.SFP_MIN_REJ_LENGTH,
+                                    range_filter_fac=stratSettings.SFP_RANGE_FILTER_FAC,
+                                    close_on_opposite=stratSettings.SFP_CLOSE_ON_OPPOSITE) \
+                    .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
+                                 threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
+                                 buffer_factor=stratSettings.KB_BUFFER_FACTOR,
+                                 max_dist_factor=stratSettings.KB_MAX_DIST_FACTOR,
+                                 max_swing_length=stratSettings.KB_MAX_SWING_LENGTH)
+                if "KB_TRAIL_TO_SWING" in stratSettings.keys():
+                    strat.withTrail(trail_to_swing=stratSettings.KB_TRAIL_TO_SWING,
+                                    delayed_swing=stratSettings.KB_DELAYED_ENTRY,
+                                    trail_back=stratSettings.KB_ALLOW_TRAIL_BACK)
             else:
-                strat= None
+                strat = None
                 logger.warn("unkown strategy: " + stratId)
             if strat is not None:
                 strat.withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
-                                risk_type=stratSettings.KB_RISK_TYPE,
-                                max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
+                             risk_type=stratSettings.KB_RISK_TYPE,
+                             max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
                 if "KB_BE_FACTOR" in stratSettings.keys():
                     strat.withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
                                                   buffer=stratSettings.KB_BE_BUFFER))
@@ -85,26 +87,26 @@ def start_bot(botSettings):
             logger.error("if you don't want to risk money, you shouldn't even run this bot!")
         else:
             bot.add_strategy(KuegiStrategy(min_channel_size_factor=botSettings.KB_MIN_CHANNEL_SIZE_FACTOR,
-                                       max_channel_size_factor=botSettings.KB_MAX_CHANNEL_SIZE_FACTOR,
-                                       entry_tightening=botSettings.KB_ENTRY_TIGHTENING,
-                                       bars_till_cancel_triggered=botSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
-                                       stop_entry=botSettings.KB_STOP_ENTRY,
-                                       delayed_entry=botSettings.KB_DELAYED_ENTRY,
-                                       delayed_cancel=botSettings.KB_DELAYED_CANCEL)
-                         .withChannel(max_look_back=botSettings.KB_MAX_LOOK_BACK,
-                                      threshold_factor=botSettings.KB_THRESHOLD_FACTOR,
-                                      buffer_factor=botSettings.KB_BUFFER_FACTOR,
-                                      max_dist_factor=botSettings.KB_MAX_DIST_FACTOR,
-                                      max_swing_length=botSettings.KB_MAX_SWING_LENGTH)
-                         .withRM(risk_factor=botSettings.KB_RISK_FACTOR,
-                                 risk_type=botSettings.KB_RISK_TYPE,
-                                 max_risk_mul=botSettings.KB_MAX_RISK_MUL)
-                         .withExitModule(SimpleBE(factor=botSettings.KB_BE_FACTOR,
-                                                  buffer=botSettings.KB_BE_BUFFER))
-                         .withTrail(trail_to_swing=botSettings.KB_TRAIL_TO_SWING,
-                                    delayed_swing=botSettings.KB_DELAYED_ENTRY,
-                                    trail_back=botSettings.KB_ALLOW_TRAIL_BACK)
-                         )
+                                           max_channel_size_factor=botSettings.KB_MAX_CHANNEL_SIZE_FACTOR,
+                                           entry_tightening=botSettings.KB_ENTRY_TIGHTENING,
+                                           bars_till_cancel_triggered=botSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
+                                           stop_entry=botSettings.KB_STOP_ENTRY,
+                                           delayed_entry=botSettings.KB_DELAYED_ENTRY,
+                                           delayed_cancel=botSettings.KB_DELAYED_CANCEL)
+                             .withChannel(max_look_back=botSettings.KB_MAX_LOOK_BACK,
+                                          threshold_factor=botSettings.KB_THRESHOLD_FACTOR,
+                                          buffer_factor=botSettings.KB_BUFFER_FACTOR,
+                                          max_dist_factor=botSettings.KB_MAX_DIST_FACTOR,
+                                          max_swing_length=botSettings.KB_MAX_SWING_LENGTH)
+                             .withRM(risk_factor=botSettings.KB_RISK_FACTOR,
+                                     risk_type=botSettings.KB_RISK_TYPE,
+                                     max_risk_mul=botSettings.KB_MAX_RISK_MUL)
+                             .withExitModule(SimpleBE(factor=botSettings.KB_BE_FACTOR,
+                                                      buffer=botSettings.KB_BE_BUFFER))
+                             .withTrail(trail_to_swing=botSettings.KB_TRAIL_TO_SWING,
+                                        delayed_swing=botSettings.KB_DELAYED_ENTRY,
+                                        trail_back=botSettings.KB_ALLOW_TRAIL_BACK)
+                             )
     live = LiveTrading(settings=botSettings, trading_bot=bot)
     t = threading.Thread(target=live.run_loop)
     t.bot: LiveTrading = live

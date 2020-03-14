@@ -45,27 +45,24 @@ def runOpti(bars,min,max):
             msg += str(i) + " "
         logger.info(msg)
         bot = MultiStrategyBot(logger=logger, directionFilter=0)
-        bot.add_strategy(SfpStrategy(
-            init_stop_type=1, tp_fac=10,
-            min_wick_fac=0.5, min_swing_length=11,
-            range_length=70, range_filter_fac=0,
-            close_on_opposite=False)
-                         .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
-                                      max_swing_length=4)
-                         .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-                .withExitModule(SimpleBE(factor=v[0]/10, buffer=v[1]/10))
-                .withExitModule(SimpleBE(factor=v[2]/10, buffer=v[3]/10))
-                         .withExitModule(ParaTrail(accInit=0.005, accInc=0.01, accMax=0.1))
-                         .withTrail(trail_to_swing=False, delayed_swing=False, trail_back=False)
-                         )
+        bot.add_strategy(KuegiStrategy(
+            min_channel_size_factor=1.618, max_channel_size_factor=16,
+            entry_tightening=0.1, bars_till_cancel_triggered=3,
+            stop_entry=True, delayed_entry=False, delayed_cancel=True)
+            .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
+            .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+            .withExitModule(SimpleBE(factor=0.1*v[0], buffer=0.1*v[1]))
+            .withExitModule(ParaTrail(accInit=0.004, accInc=0, accMax=0.01))
+            #.withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
+            )
         BackTest(bot, bars).run()
 
         if not increment(min,max,v):
             break
 
 
-bars_b = load_bars(30 * 12, 240,0,'bybit')
-#bars_m = load_bars(30 * 24, 240,0,'bitmex')
+#bars_b = load_bars(30 * 12, 240,0,'bybit')
+bars_m = load_bars(30 * 24, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
 #bars_m = load_bars(30 * 24, 60,0,'bitmex')
@@ -77,6 +74,9 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 
 #runOpti(bars_b,[5,2,13,6],[10,5,18,10])
 
+'''
+
+Bybit:
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
@@ -104,19 +104,26 @@ bot.add_strategy(KuegiStrategy(
                  )
 b= BackTest(bot, bars_b).run()
 
-'''
-bot = MultiStrategyBot(logger=logger, directionFilter=0)
+#Bitmex:
+
+bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(KuegiStrategy(
-    min_channel_size_factor=0, max_channel_size_factor=16, 
-    entry_tightening=1, bars_till_cancel_triggered=5,
-    stop_entry=True, delayed_entry=True, delayed_cancel=True)
-    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1) 
-    .withExitModule(SimpleBE(factor=1, buffer=0.4))
-    .withExitModule(SimpleBE(factor=1, buffer=0.4))
-    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
-                 )
-BackTest(bot, bars_b).run()
+    min_channel_size_factor=1.618, max_channel_size_factor=16,
+    entry_tightening=0.1, bars_till_cancel_triggered=3,
+    stop_entry=True, delayed_entry=False, delayed_cancel=True)
+    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
+    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+    .withExitModule(SimpleBE(factor=1.2, buffer=0.2))
+    #.withExitModule(SimpleBE(factor=2, buffer=0.5))
+    .withExitModule(ParaTrail(accInit=0.004, accInc=0, accMax=0.01))
+    #.withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
+    )
+b= BackTest(bot, bars_m).run()
+
+
+bot.create_performance_plot().show()
+
+b.prepare_plot().show()
 
 good be levels kuegi: 5/-1 10/5 13/8 15/11
 
@@ -137,32 +144,7 @@ good be levels sfp: 6/4  10/5  16/8  20/16 -> 7.22
 '''
 ##### SFP 240
 
-bot=MultiStrategyBot(logger=logger, directionFilter= 0)
-bot.add_strategy(KuegiStrategy(
-    min_channel_size_factor=1.618, max_channel_size_factor=16,
-    entry_tightening=0.1, bars_till_cancel_triggered=3,
-    stop_entry=True, delayed_entry=False, delayed_cancel=True)
-    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withExitModule(SimpleBE(factor=2, buffer=0.1))
-    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
-    )
-bot.add_strategy(SfpStrategy(
-             init_stop_type=1, tp_fac=25,
-             min_wick_fac=0.3, min_swing_length=2,
-             range_length=50, range_filter_fac=0,
-             close_on_opposite=False)
-    .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withExitModule(SimpleBE(factor=1, buffer=0.3))
-    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
-                 )
-b= BackTest(bot, bars_m).run()
 
-
-bot.create_performance_plot().show()
-
-b.prepare_plot().show()
 
 2020-03-03
 bybit 12: pos: 106 | profit: 36.72 | HH: 37.52 | maxDD: 3.71 | rel: 9.80 | UW days: 34.8
@@ -249,15 +231,16 @@ Bitmex Opti
 Fokus on Profit/DD: 
 12 mo bybit pos: 266 | profit: 50.77 | HH: 66.65 | maxDD: 22.89 | rel: 2.22 | UW days: 94.93
 
-12 months: pos: 284 | profit: 97.47 | HH: 109.24 | maxDD: 19.66 | rel: 4.90 | UW days: 62.2
-24 months: pos: 553 | profit: 167.68 | HH: 179.45 | maxDD: 24.03 | rel: 3.56 | UW days: 98.5
+##12 months: pos: 270 | profit: 311.39 | HH: 311.39 | maxDD: 2.32 | rel: 136.61 | UW days: 2.7
+24 months: pos: 548 | pos: 550 | profit: 441.27 | HH: 441.27 | maxDD: 8.97 | rel: 25.06 | UW days: 12.3
+BE 20/0 : pos: 553 | profit: 155.84 | HH: 166.08 | maxDD: 22.83 | rel: 3.48 | UW days: 98.5
     min_channel_size_factor=1.618, max_channel_size_factor=16,
     entry_tightening=0.1, bars_till_cancel_triggered=3,
     stop_entry=True, delayed_entry=False, delayed_cancel=True)
     .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-    .withExitModule(SimpleBE(factor=2, buffer=0.1))
-    .withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
+    .withExitModule(SimpleBE(factor=1.2, buffer=0.2))
+    .withExitModule(ParaTrail(accInit=0.004, accInc=0, accMax=0.01))
     
 
 
