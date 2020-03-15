@@ -231,9 +231,8 @@ Bitmex Opti
 Fokus on Profit/DD: 
 12 mo bybit pos: 266 | profit: 50.77 | HH: 66.65 | maxDD: 22.89 | rel: 2.22 | UW days: 94.93
 
-##12 months: pos: 270 | profit: 311.39 | HH: 311.39 | maxDD: 2.32 | rel: 136.61 | UW days: 2.7
-24 months: pos: 548 | pos: 550 | profit: 441.27 | HH: 441.27 | maxDD: 8.97 | rel: 25.06 | UW days: 12.3
-BE 20/0 : pos: 553 | profit: 155.84 | HH: 166.08 | maxDD: 22.83 | rel: 3.48 | UW days: 98.5
+12 months: pos: 270 | profit: 311.39 | HH: 311.39 | maxDD: 2.32 | rel: 136.61 | UW days: 2.7
+24 months: pos: 550 | profit: 441.27 | HH: 441.27 | maxDD: 8.97 | rel: 25.06 | UW days: 12.3
     min_channel_size_factor=1.618, max_channel_size_factor=16,
     entry_tightening=0.1, bars_till_cancel_triggered=3,
     stop_entry=True, delayed_entry=False, delayed_cancel=True)

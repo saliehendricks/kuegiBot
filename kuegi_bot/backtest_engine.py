@@ -51,6 +51,7 @@ class BackTest(OrderInterface):
         self.maxDD = 0
         self.max_underwater = 0
         self.underwater = 0
+        self.maxExposure= 0
         self.lastHHPosition = 0
 
         self.current_bars = []
@@ -68,6 +69,7 @@ class BackTest(OrderInterface):
         self.max_underwater = 0
         self.lastHHPosition = 0
         self.underwater = 0
+        self.maxExposure= 0
         self.bot.reset()
 
         self.current_bars = []
@@ -188,6 +190,7 @@ class BackTest(OrderInterface):
         if dd > self.maxDD:
             self.maxDD = max(self.maxDD, dd)
 
+        self.maxExposure= max(self.maxExposure,abs(self.account.open_position.quantity)/self.current_bars[0].close)
         if self.account.equity < self.hh:
             self.underwater += 1
         else:
@@ -231,6 +234,17 @@ class BackTest(OrderInterface):
             self.send_order(Order(orderId="endOfTest", amount=-self.account.open_position.quantity))
             self.handle_open_orders(self.bars[0].subbars[-1])
 
+        daysInPos = 0
+        maxDays= 0
+        minDays= self.bot.position_history[0].daysInPos()
+        for pos in self.bot.position_history:
+            if pos.exit_tstamp is None:
+                pos.exit_tstamp = self.bars[0].tstamp
+            daysInPos += pos.daysInPos()
+            maxDays= max(maxDays,pos.daysInPos())
+            minDays= min(minDays,pos.daysInPos())
+        daysInPos /= len(self.bot.position_history)
+
         profit = self.account.equity - self.initialEquity
         uw_updates_per_day = 1440  # every minute
         total_days= (self.bars[0].tstamp - self.bars[-1].tstamp)/(60*60*24)
@@ -240,8 +254,11 @@ class BackTest(OrderInterface):
                     + " | profit: " + ("%.2f" % (100 * profit / self.initialEquity))
                     + " | HH: " + ("%.2f" % (100 * (self.hh / self.initialEquity - 1)))
                     + " | maxDD: " + ("%.2f" % (100 * self.maxDD / self.initialEquity))
+                    + " | maxExp: " + ("%.2f" % self.maxExposure)
                     + " | rel: " + ("%.2f" % (rel_per_year))
-                    + " | UW days: " + ("%.1f" % (self.max_underwater / uw_updates_per_day)))
+                    + " | UW days: " + ("%.1f" % (self.max_underwater / uw_updates_per_day))
+                    + " | pos days: " + ("%.1f/%.1f/%.1f" % (minDays,daysInPos,maxDays))
+                    )
 
         #self.write_results_to_files()
         return self

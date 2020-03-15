@@ -175,6 +175,11 @@ class Position:
         pos.status= state
         return pos
 
+    def daysInPos(self):
+        if self.entry_tstamp is None or self.entry_tstamp is None:
+            return 0
+        return (self.exit_tstamp-self.entry_tstamp)/(60*60*24)
+
 
 def parse_utc_timestamp(timestamp: str) -> float:
     import calendar
