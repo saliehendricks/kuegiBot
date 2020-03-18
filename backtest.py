@@ -92,6 +92,9 @@ bot.add_strategy(SfpStrategy(
                  .withExitModule(ParaTrail(accInit=0.005, accInc=0.01, accMax=0.1))
                  .withTrail(trail_to_swing=False, delayed_swing=False, trail_back=False)
                  )
+                 
+                 
+bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(KuegiStrategy(
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
@@ -100,7 +103,7 @@ bot.add_strategy(KuegiStrategy(
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
     .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
     .withExitModule(SimpleBE(factor=1, buffer=0.5))
-    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
+    .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
                  )
 b= BackTest(bot, bars_b).run()
 
@@ -114,9 +117,7 @@ bot.add_strategy(KuegiStrategy(
     .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
     .withExitModule(SimpleBE(factor=1.2, buffer=0.2))
-    #.withExitModule(SimpleBE(factor=2, buffer=0.5))
-    .withExitModule(ParaTrail(accInit=0.004, accInc=0, accMax=0.01))
-    #.withTrail(trail_to_swing=False, delayed_swing=False,trail_back=True)
+    .withExitModule(ParaTrail(accInit=0.004, accInc=0.003, accMax=0.07))
     )
 b= BackTest(bot, bars_m).run()
 
@@ -215,31 +216,30 @@ original: pos: 319 | profit: 39.17 | HH: 39.17 | maxDD: 30.71 | rel: 1.28 | UW d
 Bybit Opti:
     
 Fokus relation stand 2020-03-03
-12 mo bybit: pos: 170 | profit: 81.51 | HH: 96.12 | maxDD: 14.90 | rel: 5.41 | UW days: 95.3
+12 mo bybit: pos: 170 | profit: 126.02 | HH: 139.37 | maxDD: 13.64 | maxExp: 357.33 | rel: 9.14 | UW days: 42.5 | pos days: 0.0/2.1/20.2
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
-    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
-    .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
-    .withExitModule(SimpleBE(factor=1, buffer=0.5))
-    .withTrail(trail_to_swing=False, delayed_swing=True,trail_back=False)
-
+                 .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
+                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
+                 .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
+                 .withExitModule(SimpleBE(factor=1, buffer=0.5))
+                 .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
 
 #############
 Bitmex Opti
 Fokus on Profit/DD: 
 12 mo bybit pos: 266 | profit: 50.77 | HH: 66.65 | maxDD: 22.89 | rel: 2.22 | UW days: 94.93
 
-12 months: pos: 270 | profit: 311.39 | HH: 311.39 | maxDD: 2.32 | rel: 136.61 | UW days: 2.7
-24 months: pos: 550 | profit: 441.27 | HH: 441.27 | maxDD: 8.97 | rel: 25.06 | UW days: 12.3
+12 months: pos: 273 | profit: 125.10 | HH: 125.10 | maxDD: 11.67 | maxExp: 267.47 | rel: 10.93 | UW days: 28.7 | pos days: 0.0/4.1/18.3
+24 months: pos: 553 | profit: 289.02 | HH: 289.02 | maxDD: 11.67 | maxExp: 388.81 | rel: 12.63 | UW days: 28.7 | pos days: 0.0/4.5/21.3
     min_channel_size_factor=1.618, max_channel_size_factor=16,
     entry_tightening=0.1, bars_till_cancel_triggered=3,
     stop_entry=True, delayed_entry=False, delayed_cancel=True)
     .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
     .withExitModule(SimpleBE(factor=1.2, buffer=0.2))
-    .withExitModule(ParaTrail(accInit=0.004, accInc=0, accMax=0.01))
+    .withExitModule(ParaTrail(accInit=0.004, accInc=0.003, accMax=0.07))
     
 
 
