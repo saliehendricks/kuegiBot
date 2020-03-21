@@ -11,6 +11,7 @@ from kuegi_bot.bots.sfp_bot import SfpBot
 
 logger = log.setup_custom_logger()
 
+
 def plot(bars):
     forplot= bars[:]
 
@@ -21,23 +22,26 @@ def plot(bars):
     fig= prepare_plot(forplot, indis)
     fig.show()
 
+
 def backtest(bars):
     bots= []
     for bot in bots:
         BackTest(bot,bars).run()
 
-def increment(min,max,current)->bool:
-    current[0] += 1
+
+def increment(min,max,steps,current)->bool:
+    current[0] += steps[0]
     for idx in range(len(current)):
         if min[idx] <= current[idx] <= max[idx]:
             return True
         current[idx]= min[idx]
         if idx < len(current)-1:
-            current[idx+1] += 1
+            current[idx+1] += steps[idx+1]
         else:
             return False
 
-def runOpti(bars,min,max):
+
+def runOpti(bars,min,max,steps):
     v= min[:]
     while True:
         msg= ""
@@ -45,24 +49,26 @@ def runOpti(bars,min,max):
             msg += str(i) + " "
         logger.info(msg)
         bot = MultiStrategyBot(logger=logger, directionFilter=0)
-        bot.add_strategy(KuegiStrategy(
-            min_channel_size_factor=1.618, max_channel_size_factor=16,
-            entry_tightening=0.1, bars_till_cancel_triggered=3,
-            stop_entry=True, delayed_entry=False, delayed_cancel=True)
-            .withChannel( max_look_back=13, threshold_factor=2.5, buffer_factor=-0.0618,max_dist_factor=1, max_swing_length=4)
-            .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-            .withExitModule(SimpleBE(factor=0.1*v[0], buffer=0.1*v[1]))
-            .withExitModule(ParaTrail(accInit=0.004, accInc=0, accMax=0.01))
-            #.withTrail(trail_to_swing=False, delayed_swing=False,trail_back=False)
-            )
+        bot.add_strategy(SfpStrategy(
+            init_stop_type=1, tp_fac=v[0],
+            min_wick_fac=0.5, min_swing_length=11,
+            range_length=70, min_rej_length= 35, range_filter_fac=0,
+            close_on_opposite=False)
+                 .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
+                              max_swing_length=4)
+                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+                 .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
+                 .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
+                 .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
+                         )
         BackTest(bot, bars).run()
 
-        if not increment(min,max,v):
+        if not increment(min,max,steps,v):
             break
 
 
-#bars_b = load_bars(30 * 12, 240,0,'bybit')
-bars_m = load_bars(30 * 24, 240,0,'bitmex')
+bars_b = load_bars(30 * 12, 240,0,'bybit')
+#bars_m = load_bars(30 * 24, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
 #bars_m = load_bars(30 * 24, 60,0,'bitmex')
@@ -80,30 +86,31 @@ Bybit:
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
-    init_stop_type=1, tp_fac=10,
+    init_stop_type=1, tp_fac=12,
     min_wick_fac=0.5, min_swing_length=11,
-    range_length=70, range_filter_fac=0,
+    range_length=70, min_rej_length= 35, range_filter_fac=0,
     close_on_opposite=False)
                  .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                               max_swing_length=4)
-                 .withRM(risk_factor=4, max_risk_mul=2, risk_type=0)
+                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
-                 .withExitModule(ParaTrail(accInit=0.005, accInc=0.01, accMax=0.1))
-                 .withTrail(trail_to_swing=False, delayed_swing=False, trail_back=False)
+                 .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
                  )
                  
-                 
+b= BackTest(bot, bars_b).run()
+                    
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
+
 bot.add_strategy(KuegiStrategy(
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
-    .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-    .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
-    .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
-    .withExitModule(SimpleBE(factor=1, buffer=0.5))
-    .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
+                 .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
+                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
+                 .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
+                 .withExitModule(SimpleBE(factor=1, buffer=0.5))
+                 .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
                  )
 b= BackTest(bot, bars_b).run()
 
@@ -145,22 +152,19 @@ good be levels sfp: 6/4  10/5  16/8  20/16 -> 7.22
 '''
 ##### SFP 240
 
-
-
 2020-03-03
-bybit 12: pos: 106 | profit: 36.72 | HH: 37.52 | maxDD: 3.71 | rel: 9.80 | UW days: 34.8
+bybit 12: pos: 104 | profit: 52.79 | HH: 53.51 | maxDD: 3.62 | maxExp: 114.27 | rel: 14.42 | UW days: 34.8 | pos days: 0.0/1.1/9.4
 
-    init_stop_type=1, tp_fac=10,
+    init_stop_type=1, tp_fac=12,
     min_wick_fac=0.5, min_swing_length=11,
-    range_length=70, range_filter_fac=0,
+    range_length=70, min_rej_length= 35, range_filter_fac=0,
     close_on_opposite=False)
                  .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                               max_swing_length=4)
                  .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
-                 .withExitModule(ParaTrail(accInit=0.005, accInc=0.01, accMax=0.1))
-                 .withTrail(trail_to_swing=False, delayed_swing=False, trail_back=False)
+                 .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
              
 
 
