@@ -50,16 +50,16 @@ def runOpti(bars,min,max,steps):
         logger.info(msg)
         bot = MultiStrategyBot(logger=logger, directionFilter=0)
         bot.add_strategy(SfpStrategy(
-            init_stop_type=1, tp_fac=v[0],
+            init_stop_type=1, tp_fac=12,
             min_wick_fac=0.5, min_swing_length=11,
             range_length=70, min_rej_length= 35, range_filter_fac=0,
             close_on_opposite=False)
-                 .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
-                              max_swing_length=4)
-                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
-                 .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
-                 .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
-                 .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
+                         .withChannel(max_look_back=13, threshold_factor=0.1*v[0], buffer_factor=0.05, max_dist_factor=1,
+                                      max_swing_length=4)
+                         .withRM(risk_factor=3, max_risk_mul=2, risk_type=0)
+                         .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
+                         .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
+                         .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
                          )
         BackTest(bot, bars).run()
 
@@ -67,8 +67,8 @@ def runOpti(bars,min,max,steps):
             break
 
 
-bars_b = load_bars(30 * 12, 240,0,'bybit')
-#bars_m = load_bars(30 * 24, 240,0,'bitmex')
+#bars_b = load_bars(30 * 12, 240,0,'bybit')
+bars_m = load_bars(30 * 24, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
 #bars_m = load_bars(30 * 24, 60,0,'bitmex')
@@ -78,11 +78,12 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 #bars3= process_low_tf_bars(m1_bars, 240, 120)
 #bars4= process_low_tf_bars(m1_bars, 240, 180)
 
-#runOpti(bars_b,[5,2,13,6],[10,5,18,10])
+#runOpti(bars_b,[8],[30],[2])
 
 '''
 
-Bybit:
+#Bybit:
+# 12mo pos: 351 | profit: 371.57 | HH: 371.57 | maxDD: 8.11 | maxExp: 468.07 | rel: 45.32 | UW days: 20.7 | pos days: 0.0/1.9/20.2
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
@@ -92,21 +93,20 @@ bot.add_strategy(SfpStrategy(
     close_on_opposite=False)
                  .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                               max_swing_length=4)
-                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
+                 .withRM(risk_factor=3, max_risk_mul=2, risk_type=0)
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
                  .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
                  )
-                 
+            
 b= BackTest(bot, bars_b).run()
-                    
-bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 
+bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(KuegiStrategy(
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
-                 .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
+                 .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
                  .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
                  .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
                  .withExitModule(SimpleBE(factor=1, buffer=0.5))
@@ -115,6 +115,9 @@ bot.add_strategy(KuegiStrategy(
 b= BackTest(bot, bars_b).run()
 
 #Bitmex:
+# 48mo  pos: 1142 | profit: 512.76 | HH: 512.76 | maxDD: 23.21 | maxExp: 651.65 | rel: 5.58 | UW days: 44.1 | pos days: 0.0/4.4/22.0
+# 24mo  pos: 553 | profit: 289.02 | HH: 289.02 | maxDD: 11.67 | maxExp: 388.81 | rel: 12.63 | UW days: 28.7 | pos days: 0.0/4.5/21.3
+# 12mo  pos: 284 | profit: 119.00 | HH: 119.00 | maxDD: 12.50 | maxExp: 267.47 | rel: 9.41 | UW days: 33.3 | pos days: 0.0/4.1/18.3
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(KuegiStrategy(
