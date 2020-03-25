@@ -307,13 +307,26 @@ class BitMEX(object):
         """Place an order."""
 
         endpoint = "order"
+        type= 'Limit'
+        if order.limit_price is not None:
+            if order.stop_price is not None:
+                type = 'StopLimit'
+            else:
+                type= 'Limit'
+        else:
+            if order.stop_price is not None:
+                type = 'Stop'
+            else:
+                type= 'Market'
+
         postdict = {
             'symbol': self.symbol,
             'orderQty': order.amount,
             'price': order.limit_price,
             'stopPx': order.stop_price,
             'execInst': 'LastPrice',
-            'clOrdID': order.id
+            'clOrdID': order.id,
+            'ordType': type
         }
         return self._curl_bitmex(path=endpoint, postdict=postdict, verb="POST")
 

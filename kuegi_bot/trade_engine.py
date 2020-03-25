@@ -47,7 +47,6 @@ class LiveTrading(OrderInterface):
             self.account: Account = Account()
             self.update_account()
             self.bot.reset()
-            self.bot.init(bars=self.bars, account=self.account, symbol=self.symbolInfo, unique_id=self.settings.id)
         else:
             self.alive = False
 
@@ -172,6 +171,9 @@ class LiveTrading(OrderInterface):
             raise e
 
     def run_loop(self):
+        if self.alive:
+            self.bot.init(bars=self.bars, account=self.account, symbol=self.symbolInfo, unique_id=self.settings.id)
+
         last = 0
         while self.alive:
             current= time.time()

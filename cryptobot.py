@@ -1,4 +1,6 @@
 import atexit
+import json
+import os
 import signal
 import sys
 import threading
@@ -10,6 +12,7 @@ from kuegi_bot.bots.kuegi_bot import KuegiBot
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE, ParaTrail
+from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.trade_engine import LiveTrading
 from kuegi_bot.utils import log
 from kuegi_bot.utils.dotdict import dotdict
@@ -129,6 +132,27 @@ def term_handler(signum, frame):
     stop_all_and_exit()
 
 
+def write_dashboard(dashboardFile):
+    try:
+        os.makedirs(os.path.dirname(dashboardFile))
+    except Exception:
+        pass
+    with open(dashboardFile, 'w') as file:
+        result = {}
+
+        for thread in activeThreads:
+            bot:LiveTrading= thread.bot
+            result[bot.id]={
+                'alive': bot.alive,
+                "last_time": bot.bot.last_time,
+                "last_tick": str(bot.bot.last_tick_time)}
+            data= result[bot.id]
+            data['positions'] = []
+
+            for pos in bot.bot.open_positions:
+                data['positions'].append(bot.bot.open_positions[pos].to_json())
+        json.dump(result, file, sort_keys=False, indent=4)
+
 def run(settings):
     signal.signal(signal.SIGTERM, term_handler)
     signal.signal(signal.SIGINT, term_handler)
@@ -167,6 +191,8 @@ def run(settings):
             if not allActive:
                 stop_all_and_exit()
                 break
+            write_dashboard(settings.DASHBOARD_FILE)
+
     else:
         logger.warn("no bots defined. nothing to do")
 

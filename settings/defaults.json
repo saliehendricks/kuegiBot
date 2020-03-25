@@ -1,4 +1,5 @@
 {
+  "DASHBOARD_FILE": "dashboard.json",
   "LOOP_INTERVAL": 5,
   "API_REST_INTERVAL": 1,
   "API_ERROR_INTERVAL": 10,

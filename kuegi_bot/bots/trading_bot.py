@@ -315,7 +315,7 @@ class TradingBot:
             if pos.status == PositionStatus.PENDING or pos.status == PositionStatus.TRIGGERED:
                 # should have the opening order in the system, but doesn't
                 # not sure why: in doubt: not create wrong orders
-                if remainingPosition * pos.amount > 0 and abs(remainingPosition) > abs(pos.amount):
+                if remainingPosition * pos.amount > 0 and abs(remainingPosition) >= abs(pos.amount):
                     # assume position was opened without us realizing (during downtime)
                     self.handle_opened_position(position=pos, order=None, bars=bars, account=account)
                     remainingPosition -= pos.amount
