@@ -1,8 +1,19 @@
 # Kuegi Bot
 
-a simple tradingbot for BTCUSD with connectors for [bybit](https://bit.ly/2rxuv8l "Bybit Homepage") and [bitmex](https://bit.ly/2G4gSB2 "Bitmex Homepage").
+a simple tradingbot for BTCUSD with connectors for [bybit](https://bit.ly/2rxuv8l "Bybit Homepage")
+ and [bitmex](https://bit.ly/2G4gSB2 "Bitmex Homepage").
 It just implements my manual tradingstrategy and therefore helps me to stick to the system. 
 No financial advice. Don't use it if you don't understand what it does. You probably will loose money
+
+## ref links
+
+if you like it and wanna start a trading account, feel free to use the ref links:
+
+[bybit](https://www.bybit.com/app/register?affiliate_id=4555&language=en&group_id=0&group_type=1)
+
+[bitmex (saves 10% fees for 6 months)](https://www.bitmex.com/register/8cXfka)
+
+[binance (svaes you 10% of fees)](https://www.binance.com/en/register?ref=NV9XQ2JE)
 
 ## required pip packages
 requests
