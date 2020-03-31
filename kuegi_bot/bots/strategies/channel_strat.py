@@ -16,6 +16,7 @@ class ChannelStrategy(StrategyWithExitModules):
         self.channel: KuegiChannel = None
         self.risk_factor = 1
         self.risk_type = 0  # 0= all equal, 1= 1 atr eq 1 R
+        self.atr_factor_risk= 1
         self.max_risk_mul = 1
         self.trail_to_swing = False
         self.delayed_swing_trail = True
@@ -25,10 +26,11 @@ class ChannelStrategy(StrategyWithExitModules):
     def myId(self):
         return "ChannelStrategy"
 
-    def withRM(self, risk_factor: float = 0.01, max_risk_mul: float = 2, risk_type: int = 0):
+    def withRM(self, risk_factor: float = 0.01, max_risk_mul: float = 2, risk_type: int = 0, atr_factor: float = 1):
         self.risk_factor = risk_factor
         self.risk_type = risk_type  # 0= all equal, 1= 1 atr eq 1 R
         self.max_risk_mul = max_risk_mul
+        self.atr_factor_risk= atr_factor
         return self
 
     def withChannel(self, max_look_back, threshold_factor, buffer_factor, max_dist_factor, max_swing_length):
@@ -47,10 +49,10 @@ class ChannelStrategy(StrategyWithExitModules):
         if self.channel is None:
             self.logger.error("No channel provided on init")
         else:
-            self.logger.info("init with %i %.1f %.3f %.1f %i | %.3f %.1f %i | %s %s %s %s" %
+            self.logger.info("init with %i %.1f %.3f %.1f %i | %.3f %.1f %i %.1f | %s %s %s %s" %
                              (self.channel.max_look_back, self.channel.threshold_factor, self.channel.buffer_factor,
                               self.channel.max_dist_factor, self.channel.max_swing_length,
-                              self.risk_factor, self.max_risk_mul, self.risk_type,
+                              self.risk_factor, self.max_risk_mul, self.risk_type, self.atr_factor_risk,
                               self.trail_active, self.delayed_swing_trail, self.trail_to_swing, self.trail_back))
             self.channel.on_tick(bars)
 
@@ -126,7 +128,7 @@ class ChannelStrategy(StrategyWithExitModules):
             if self.risk_type == 1:
                 # use atr as delta reference, but max X the actual delta. so risk is never more than X times the
                 # wanted risk
-                delta = math.copysign(min(self.max_risk_mul * abs(delta), self.max_risk_mul * data.atr), delta)
+                delta = math.copysign(max(abs(delta)/self.max_risk_mul, data.atr*self.atr_factor_risk), delta)
 
             if not self.symbol.isInverse:
                 size = risk / delta

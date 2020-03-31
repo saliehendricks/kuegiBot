@@ -67,8 +67,8 @@ def runOpti(bars,min,max,steps):
             break
 
 
-#bars_b = load_bars(30 * 12, 240,0,'bybit')
-bars_m = load_bars(30 * 24, 240,0,'bitmex')
+bars_b = load_bars(30 * 12, 240,0,'bybit')
+#bars_m = load_bars(30 * 24, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
 #bars_m = load_bars(30 * 24, 60,0,'bitmex')
@@ -83,7 +83,7 @@ bars_m = load_bars(30 * 24, 240,0,'bitmex')
 '''
 
 #Bybit:
-# 12mo pos: 351 | profit: 371.57 | HH: 371.57 | maxDD: 8.11 | maxExp: 468.07 | rel: 45.32 | UW days: 20.7 | pos days: 0.0/1.9/20.2
+# 12mo pos: 351 | profit: 341.79 | HH: 341.79 | maxDD: 8.24 | maxExp: 451.40 | rel: 41.06 | UW days: 20.7 | pos days: 0.0/1.9/20.2
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
@@ -93,7 +93,7 @@ bot.add_strategy(SfpStrategy(
     close_on_opposite=False)
                  .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                               max_swing_length=4)
-                 .withRM(risk_factor=3, max_risk_mul=2, risk_type=0)
+                 .withRM(risk_factor=3, max_risk_mul=2, risk_type=0, atr_factor=1)
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
                  .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
@@ -107,7 +107,7 @@ bot.add_strategy(KuegiStrategy(
     entry_tightening=1, bars_till_cancel_triggered=5,
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
                  .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
+                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1, atr_factor=2)
                  .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
                  .withExitModule(SimpleBE(factor=1, buffer=0.5))
                  .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
@@ -223,12 +223,12 @@ original: pos: 319 | profit: 39.17 | HH: 39.17 | maxDD: 30.71 | rel: 1.28 | UW d
 Bybit Opti:
     
 Fokus relation stand 2020-03-03
-12 mo bybit: pos: 170 | profit: 126.02 | HH: 139.37 | maxDD: 13.64 | maxExp: 357.33 | rel: 9.14 | UW days: 42.5 | pos days: 0.0/2.1/20.2
+12 mo bybit: pos: 247 | profit: 184.54 | HH: 188.98 | maxDD: 9.30 | maxExp: 340.66 | rel: 19.63 | UW days: 42.6 | pos days: 0.0/2.3/20.2
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
-                 .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1)
+                 .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
+                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1, atr_factor=2)
                  .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
                  .withExitModule(SimpleBE(factor=1, buffer=0.5))
                  .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))

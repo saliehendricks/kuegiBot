@@ -73,7 +73,8 @@ def start_bot(botSettings):
             if strat is not None:
                 strat.withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
                              risk_type=stratSettings.KB_RISK_TYPE,
-                             max_risk_mul=stratSettings.KB_MAX_RISK_MUL)
+                             max_risk_mul=stratSettings.KB_MAX_RISK_MUL,
+                             atr_factor=stratSettings.KB_RISK_ATR_FAC)
                 if "KB_BE_FACTOR" in stratSettings.keys():
                     strat.withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
                                                   buffer=stratSettings.KB_BE_BUFFER))
@@ -103,7 +104,8 @@ def start_bot(botSettings):
                                           max_swing_length=botSettings.KB_MAX_SWING_LENGTH)
                              .withRM(risk_factor=botSettings.KB_RISK_FACTOR,
                                      risk_type=botSettings.KB_RISK_TYPE,
-                                     max_risk_mul=botSettings.KB_MAX_RISK_MUL)
+                                     max_risk_mul=botSettings.KB_MAX_RISK_MUL,
+                                     atr_factor=botSettings.KB_RISK_ATR_FAC)
                              .withExitModule(SimpleBE(factor=botSettings.KB_BE_FACTOR,
                                                       buffer=botSettings.KB_BE_BUFFER))
                              .withTrail(trail_to_swing=botSettings.KB_TRAIL_TO_SWING,
