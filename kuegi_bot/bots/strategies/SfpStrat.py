@@ -39,8 +39,6 @@ class SfpStrategy(ChannelStrategy):
     def open_orders(self, is_new_bar, directionFilter, bars, account, open_positions):
         if (not is_new_bar) or len(bars) < 5:
             return  # only open orders on beginning of bar
-        self.logger.info("---- analyzing: %s: " %
-                         (str(datetime.fromtimestamp(bars[0].tstamp))))
 
         atr = clean_range(bars, offset=0, length=self.channel.max_look_back * 2)
         risk = self.risk_factor
@@ -102,6 +100,17 @@ class SfpStrategy(ChannelStrategy):
         longSFP = self.entries != 1 and gotHighSwing and bars[1].close + data.buffer < swingHigh
         longRej = self.entries != 2 and bars[1].high > hh > bars[1].close + data.buffer and \
                     highSupreme > minRejLength and bars[1].high - bars[1].close > (bars[1].high - bars[1].low) / 2
+
+        # LONG
+        shortSFP = self.entries != 1 and gotLowSwing and bars[1].close - data.buffer > swingLow
+        shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > minRejLength \
+                   and bars[1].close - bars[1].low > (bars[1].high - bars[1].low) / 2
+
+        self.logger.info("---- analyzing: %s: %.1f %.1f %.0f | %s %.0f or %i %.0f %.0f | %s %.0f or %i %.0f %.0f " %
+                         (str(datetime.fromtimestamp(bars[0].tstamp)), data.buffer, atr, rangeMedian,
+                          gotHighSwing, swingHigh, highSupreme, hh ,bars[1].high - bars[1].close,
+                          gotLowSwing, swingLow, lowSupreme, ll ,bars[1].close - bars[1].low ))
+        
         if (longSFP or longRej) and (bars[1].high - bars[1].close) > atr * self.min_wick_fac \
                 and directionFilter <= 0 and bars[1].high > rangeMedian + atr * self.range_filter_fac:
             # close existing short pos
@@ -138,10 +147,7 @@ class SfpStrategy(ChannelStrategy):
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
             pos.status= PositionStatus.OPEN
-        # LONG
-        shortSFP = self.entries != 1 and gotLowSwing and bars[1].close - data.buffer > swingLow
-        shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > minRejLength \
-                   and bars[1].close - bars[1].low > (bars[1].high - bars[1].low) / 2
+
         if (shortSFP or shortRej) and (bars[1].close - bars[1].low) > atr * self.min_wick_fac \
                 and directionFilter >= 0 and bars[1].low < rangeMedian - self.range_filter_fac:
             # close existing short pos
