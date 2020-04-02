@@ -47,7 +47,7 @@ def load_settings_from_args():
 
 
 def load_bars(days_in_history, wanted_tf, start_offset_minutes=0,exchange='bitmex'):
-    end = 45 if exchange == 'bitmex' else 13
+    end = 45 if exchange == 'bitmex' else 14
     start = max(0,end - int(days_in_history * 1440 / 50000))
     m1_bars = []
     logger.info("loading " + str(end - start) + " history files from "+exchange)

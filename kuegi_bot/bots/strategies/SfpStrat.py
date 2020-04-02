@@ -106,10 +106,10 @@ class SfpStrategy(ChannelStrategy):
         shortRej = self.entries != 2 and bars[1].low < ll < bars[1].close - data.buffer and lowSupreme > minRejLength \
                    and bars[1].close - bars[1].low > (bars[1].high - bars[1].low) / 2
 
-        self.logger.info("---- analyzing: %s: %.1f %.1f %.0f | %s %.0f or %i %.0f %.0f | %s %.0f or %i %.0f %.0f " %
+        self.logger.info("---- analyzing: %s: %.1f %.1f %.0f | %s %.0f %i or %i %.0f %.0f | %s %.0f %i or %i %.0f %.0f " %
                          (str(datetime.fromtimestamp(bars[0].tstamp)), data.buffer, atr, rangeMedian,
-                          gotHighSwing, swingHigh, highSupreme, hh ,bars[1].high - bars[1].close,
-                          gotLowSwing, swingLow, lowSupreme, ll ,bars[1].close - bars[1].low ))
+                          gotHighSwing, swingHigh, hhBack, highSupreme, hh ,bars[1].high - bars[1].close,
+                          gotLowSwing, swingLow, llBack, lowSupreme, ll ,bars[1].close - bars[1].low ))
         
         if (longSFP or longRej) and (bars[1].high - bars[1].close) > atr * self.min_wick_fac \
                 and directionFilter <= 0 and bars[1].high > rangeMedian + atr * self.range_filter_fac:

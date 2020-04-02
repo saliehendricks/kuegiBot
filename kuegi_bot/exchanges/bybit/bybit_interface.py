@@ -268,6 +268,12 @@ class ByBitInterface(ExchangeInterface):
         start = int(datetime.now().timestamp() - tf * 60 * 199)
         bars = self._execute(self.bybit.Kline.Kline_get(
             **{'symbol': 'BTCUSD', 'interval': str(tf), 'from': str(start), 'limit': '200'}))
+        # get more history to fill enough (currently 200 H4 bars.
+        for idx in range(3):
+            start = int(bars[0]['open_time']) - tf * 60 * 200
+            bars1 = self._execute(self.bybit.Kline.Kline_get(
+                **{'symbol': 'BTCUSD', 'interval': str(tf), 'from': str(start), 'limit': '200'}))
+            bars = bars1 + bars
 
         return self._aggregate_bars(reversed(bars), timeframe_minutes, start_offset_minutes)
 

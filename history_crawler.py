@@ -29,7 +29,7 @@ offset= 0
 
 #init
 # TODO: adapt this to your number if you already have history files
-lastknown= 13 if exchange == 'bybit' else 45
+lastknown= 14 if exchange == 'bybit' else 45
 
 try:
     os.makedirs('history/'+exchange)
