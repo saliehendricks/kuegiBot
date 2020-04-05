@@ -11,7 +11,7 @@ from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
 from kuegi_bot.bots.kuegi_bot import KuegiBot
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
-from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE, ParaTrail
+from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.trade_engine import LiveTrading
 from kuegi_bot.utils import log

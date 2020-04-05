@@ -96,6 +96,10 @@ class KuegiStrategy(ChannelStrategy):
         if (not is_new_bar) or len(bars) < 5:
             return  # only open orders on beginning of bar
 
+        if not self.entries_allowed(bars):
+            self.logger.info(" no entries allowed")
+            return
+
         last_data: Data = self.channel.get_data(bars[2])
         data: Data = self.channel.get_data(bars[1])
         if data is None:

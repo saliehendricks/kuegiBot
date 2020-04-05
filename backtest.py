@@ -1,6 +1,7 @@
 from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
-from kuegi_bot.bots.strategies.strat_with_exit_modules import SimpleBE, ParaTrail
+from kuegi_bot.bots.strategies.entry_filters import DayOfWeekFilter
+from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.utils.helper import load_bars, prepare_plot
@@ -54,12 +55,13 @@ def runOpti(bars,min,max,steps):
             min_wick_fac=0.5, min_swing_length=11,
             range_length=70, min_rej_length= 35, range_filter_fac=0,
             close_on_opposite=False)
-                         .withChannel(max_look_back=13, threshold_factor=0.1*v[0], buffer_factor=0.05, max_dist_factor=1,
+                         .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                                       max_swing_length=4)
-                         .withRM(risk_factor=3, max_risk_mul=2, risk_type=0)
+                         .withRM(risk_factor=1, max_risk_mul=2, risk_type=0, atr_factor=1)
                          .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                          .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
                          .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
+                         .withEntryFilter(DayOfWeekFilter(v[0]))
                          )
         BackTest(bot, bars).run()
 
@@ -67,7 +69,7 @@ def runOpti(bars,min,max,steps):
             break
 
 
-bars_b = load_bars(30 * 12, 240,0,'bybit')
+bars_b = load_bars(30 * 14, 240,0,'bybit')
 #bars_m = load_bars(30 * 24, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
@@ -81,6 +83,15 @@ bars_b = load_bars(30 * 12, 240,0,'bybit')
 #runOpti(bars_b,[8],[30],[2])
 
 '''
+
+KuegiBot weekdays bybit rel / maxDD
+Monday: 0.29 / 8
+Tuesday: 6.3 / 4.58
+Wednesday: 4.91 / 7.72
+Thursday: 4.72 / 6.86
+Friday: 6.87 / 6.76
+Saturday: 4.71 / 7.65
+Sunday: -1 / 9,6
 
 #Bybit:
 # 12mo pos: 351 | profit: 341.79 | HH: 341.79 | maxDD: 8.24 | maxExp: 451.40 | rel: 41.06 | UW days: 20.7 | pos days: 0.0/1.9/20.2

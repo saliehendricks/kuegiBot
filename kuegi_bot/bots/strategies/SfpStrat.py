@@ -40,6 +40,10 @@ class SfpStrategy(ChannelStrategy):
         if (not is_new_bar) or len(bars) < 5:
             return  # only open orders on beginning of bar
 
+        if not self.entries_allowed(bars):
+            self.logger.info(" no entries allowed")
+            return
+
         atr = clean_range(bars, offset=0, length=self.channel.max_look_back * 2)
         risk = self.risk_factor
 
