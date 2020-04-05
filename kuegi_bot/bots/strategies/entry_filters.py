@@ -11,6 +11,10 @@ class DayOfWeekFilter(EntryFilter):
         super().__init__()
         self.allowedDaysMask= allowedDaysMask
 
+    def init(self, logger):
+        super().init(logger)
+        self.logger.info("init DayOfWeek {0:b}".format(self.allowedDaysMask))
+
     def entries_allowed(self,bars:List[Bar]):
         dayOfWeek= datetime.fromtimestamp(bars[0].tstamp).weekday()
         mask = 1 << dayOfWeek

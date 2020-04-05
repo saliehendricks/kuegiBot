@@ -93,8 +93,8 @@ Friday: 6.87 / 6.76
 Saturday: 4.71 / 7.65
 Sunday: -1 / 9,6
 
-#Bybit:
-# 12mo pos: 351 | profit: 341.79 | HH: 341.79 | maxDD: 8.24 | maxExp: 451.40 | rel: 41.06 | UW days: 20.7 | pos days: 0.0/1.9/20.2
+#Bybit: 2020-04-04
+# 14mo pos: 315 | profit: 336.14 | HH: 336.14 | maxDD: 5.39 | maxExp: 324.20 | rel: 52.23 | UW days: 22.2 | pos days: 0.0/2.1/19.3
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
@@ -104,10 +104,11 @@ bot.add_strategy(SfpStrategy(
     close_on_opposite=False)
                  .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                               max_swing_length=4)
-                 .withRM(risk_factor=3, max_risk_mul=2, risk_type=0, atr_factor=1)
+                 .withRM(risk_factor=2, max_risk_mul=2, risk_type=0, atr_factor=1)
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
                  .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
+                 .withEntryFilter(DayOfWeekFilter(61))
                  )
             
 b= BackTest(bot, bars_b).run()
@@ -122,6 +123,7 @@ bot.add_strategy(KuegiStrategy(
                  .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
                  .withExitModule(SimpleBE(factor=1, buffer=0.5))
                  .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
+                 .withEntryFilter(DayOfWeekFilter(55))
                  )
 b= BackTest(bot, bars_b).run()
 
@@ -166,8 +168,8 @@ good be levels sfp: 6/4  10/5  16/8  20/16 -> 7.22
 '''
 ##### SFP 240
 
-2020-03-03
-bybit 12: pos: 104 | profit: 52.79 | HH: 53.51 | maxDD: 3.62 | maxExp: 114.27 | rel: 14.42 | UW days: 34.8 | pos days: 0.0/1.1/9.4
+2020-04-04
+bybit 14: pos: 92 | profit: 71.85 | HH: 71.85 | maxDD: 2.96 | maxExp: 137.37 | rel: 20.35 | UW days: 84.4 | pos days: 0.0/1.2/8.2
 
     init_stop_type=1, tp_fac=12,
     min_wick_fac=0.5, min_swing_length=11,
@@ -179,6 +181,7 @@ bybit 12: pos: 104 | profit: 52.79 | HH: 53.51 | maxDD: 3.62 | maxExp: 114.27 | 
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
                  .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
+                 .withEntryFilter(DayOfWeekFilter(61))
              
 
 
@@ -233,8 +236,8 @@ original: pos: 319 | profit: 39.17 | HH: 39.17 | maxDD: 30.71 | rel: 1.28 | UW d
 ##########
 Bybit Opti:
     
-Fokus relation stand 2020-03-03
-12 mo bybit: pos: 247 | profit: 184.54 | HH: 188.98 | maxDD: 9.30 | maxExp: 340.66 | rel: 19.63 | UW days: 42.6 | pos days: 0.0/2.3/20.2
+Fokus relation stand 2020-04-04
+14 mo bybit: pos: 223 | profit: 192.45 | HH: 193.74 | maxDD: 6.49 | maxExp: 324.20 | rel: 24.85 | UW days: 23.5 | pos days: 0.0/2.5/19.3
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
     stop_entry=True, delayed_entry=True, delayed_cancel=True)
@@ -243,6 +246,7 @@ Fokus relation stand 2020-03-03
                  .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
                  .withExitModule(SimpleBE(factor=1, buffer=0.5))
                  .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
+                 .withEntryFilter(DayOfWeekFilter(55))
 
 #############
 Bitmex Opti

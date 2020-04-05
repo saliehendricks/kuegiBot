@@ -68,6 +68,8 @@ class StrategyWithExitModulesAndFilter(Strategy):
         super().init(bars, account, symbol)
         for module in self.exitModules:
             module.init(self.logger)
+        for fil in self.entryFilters:
+            fil.init(self.logger)
 
     def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
         return reduce((lambda x, y: x and y.got_data_for_position_sync(bars)), self.exitModules, True)

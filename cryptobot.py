@@ -10,6 +10,7 @@ from typing import List
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
 from kuegi_bot.bots.kuegi_bot import KuegiBot
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
+from kuegi_bot.bots.strategies.entry_filters import DayOfWeekFilter
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail
 from kuegi_bot.bots.trading_bot import TradingBot
@@ -85,6 +86,8 @@ def start_bot(botSettings):
                     strat.withExitModule(ParaTrail(accInit=stratSettings.EM_PARA_INIT,
                                                    accInc=stratSettings.EM_PARA_INC,
                                                    accMax=stratSettings.EM_PARA_MAX))
+                if "FILTER_DAYWEEK" in stratSettings.keys():
+                    strat.withEntryFilter(DayOfWeekFilter(stratSettings.FILTER_DAYWEEK))
                 bot.add_strategy(strat)
     else:
         if botSettings.KB_RISK_FACTOR <= 0:
