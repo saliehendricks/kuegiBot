@@ -94,7 +94,21 @@ Saturday: 4.71 / 7.65
 Sunday: -1 / 9,6
 
 #Bybit: 2020-04-04
-# 14mo pos: 315 | profit: 336.14 | HH: 336.14 | maxDD: 5.39 | maxExp: 324.20 | rel: 52.23 | UW days: 22.2 | pos days: 0.0/2.1/19.3
+# 13mo pos: 287 | profit: 525.47 | HH: 525.47 | maxDD: 10.78 | maxExp: 648.40 | rel: 44.20 | UW days: 22.2 | pos days: 0.0/2.1/19.3
+
+bot=MultiStrategyBot(logger=logger, directionFilter= 0)
+bot.add_strategy(KuegiStrategy(
+    min_channel_size_factor=0, max_channel_size_factor=16,
+    entry_tightening=1, bars_till_cancel_triggered=5,
+    stop_entry=True, delayed_entry=True, delayed_cancel=True)
+                 .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
+                 .withRM(risk_factor=2, max_risk_mul=2, risk_type=1, atr_factor=2)
+                 .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
+                 .withExitModule(SimpleBE(factor=1, buffer=0.5))
+                 .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
+                 .withEntryFilter(DayOfWeekFilter(55))
+                 )
+b= BackTest(bot, bars_b).run()
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(SfpStrategy(
@@ -104,26 +118,11 @@ bot.add_strategy(SfpStrategy(
     close_on_opposite=False)
                  .withChannel(max_look_back=13, threshold_factor=0.8, buffer_factor=0.05, max_dist_factor=1,
                               max_swing_length=4)
-                 .withRM(risk_factor=2, max_risk_mul=2, risk_type=0, atr_factor=1)
+                 .withRM(risk_factor=4, max_risk_mul=2, risk_type=0, atr_factor=1)
                  .withExitModule(SimpleBE(factor=0.6, buffer=0.4))
                  .withExitModule(SimpleBE(factor=1.6, buffer=0.8))
                  .withExitModule(ParaTrail(accInit=0.007, accInc=0.018, accMax=0.07))
                  .withEntryFilter(DayOfWeekFilter(61))
-                 )
-            
-b= BackTest(bot, bars_b).run()
-
-bot=MultiStrategyBot(logger=logger, directionFilter= 0)
-bot.add_strategy(KuegiStrategy(
-    min_channel_size_factor=0, max_channel_size_factor=16,
-    entry_tightening=1, bars_till_cancel_triggered=5,
-    stop_entry=True, delayed_entry=True, delayed_cancel=True)
-                 .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-                 .withRM(risk_factor=1, max_risk_mul=2, risk_type=1, atr_factor=2)
-                 .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
-                 .withExitModule(SimpleBE(factor=1, buffer=0.5))
-                 .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
-                 .withEntryFilter(DayOfWeekFilter(55))
                  )
 b= BackTest(bot, bars_b).run()
 
