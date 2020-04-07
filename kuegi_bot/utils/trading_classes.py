@@ -259,7 +259,7 @@ class ExchangeInterface(OrderInterface):
     def exit(self):
         pass
 
-    def internal_cancel_order(self, orderId):
+    def internal_cancel_order(self, order: Order):
         pass
 
     def internal_send_order(self, order: Order):

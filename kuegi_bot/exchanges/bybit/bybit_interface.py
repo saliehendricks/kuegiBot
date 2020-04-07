@@ -28,7 +28,7 @@ class ByBitInterface(ExchangeInterface):
         self.ws.callback = self.socket_callback
 
         self.orders = {}
-        self.positions :List[AccountPosition] = {}
+        self.positions = {}
         self.bars = []
         self.last = 0
         self.init()
