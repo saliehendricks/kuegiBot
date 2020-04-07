@@ -236,7 +236,7 @@ class BackTest(OrderInterface):
 
         daysInPos = 0
         maxDays= 0
-        minDays= self.bot.position_history[0].daysInPos()
+        minDays= self.bot.position_history[0].daysInPos() if len(self.bot.position_history) > 0 else 0
         for pos in self.bot.position_history:
             if pos.exit_tstamp is None:
                 pos.exit_tstamp = self.bars[0].tstamp

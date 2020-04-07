@@ -128,8 +128,8 @@ b= BackTest(bot, bars_b).run()
 
 #Bitmex:
 # 48mo  pos: 1142 | profit: 512.76 | HH: 512.76 | maxDD: 23.21 | maxExp: 651.65 | rel: 5.58 | UW days: 44.1 | pos days: 0.0/4.4/22.0
-# 24mo  pos: 553 | profit: 289.02 | HH: 289.02 | maxDD: 11.67 | maxExp: 388.81 | rel: 12.63 | UW days: 28.7 | pos days: 0.0/4.5/21.3
-# 12mo  pos: 284 | profit: 119.00 | HH: 119.00 | maxDD: 12.50 | maxExp: 267.47 | rel: 9.41 | UW days: 33.3 | pos days: 0.0/4.1/18.3
+# 24mo  pos: 422 | profit: 289.86 | HH: 292.40 | maxDD: 9.73 | maxExp: 387.49 | rel: 15.18 | UW days: 24.4 | pos days: 0.0/4.8/21.3
+# 12mo  pos: 205 | profit: 120.33 | HH: 122.86 | maxDD: 9.73 | maxExp: 215.58 | rel: 12.61 | UW days: 24.4 | pos days: 0.0/4.5/18.3
 
 bot=MultiStrategyBot(logger=logger, directionFilter= 0)
 bot.add_strategy(KuegiStrategy(
@@ -140,6 +140,7 @@ bot.add_strategy(KuegiStrategy(
     .withRM(risk_factor=1, max_risk_mul=2, risk_type=0)
     .withExitModule(SimpleBE(factor=1.2, buffer=0.2))
     .withExitModule(ParaTrail(accInit=0.004, accInc=0.003, accMax=0.07))
+                 .withEntryFilter(DayOfWeekFilter(31))
     )
 b= BackTest(bot, bars_m).run()
 
