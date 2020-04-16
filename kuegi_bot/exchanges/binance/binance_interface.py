@@ -25,6 +25,7 @@ class BinanceInterface(ExchangeInterface):
         self.bars = []
         self.last = 0
         self.open = False
+        self.listen_key = ""
         self.init()
 
     def init(self):
@@ -32,24 +33,73 @@ class BinanceInterface(ExchangeInterface):
         self.initOrders()
         self.initPositions()
         self.logger.info("got all data. subscribing to live updates.")
-        self.ws.subscribe_order()
-        self.ws.subscribe_stop_order()
-        self.ws.subscribe_execution()
-        self.ws.subscribe_position()
+        self.listen_key = self.client.start_user_data_stream()
+
+        self.ws.subscribe_user_data_event(self.listen_key, self.callback, self.error)
         subbarsIntervall = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
         self.ws.subscribe_candlestick_event(self.symbol, subbarsIntervall, self.callback, self.error)
         self.open= True
         self.logger.info("ready to go")
 
     def callback(self,data_type: 'SubscribeMessageType', event: 'any'):
+        #TODO: refresh userdata every 15 min
+        self.client.keep_user_data_stream()
+        '''
+        {'eventType': 'ORDER_TRADE_UPDATE', 'eventTime': 1587063513592, 'transactionTime': 1587063513589, 'symbol': 'BTCUSDT', 'clientOrderId': 'web_ybDNrTjCi765K3AvOMRK', 'side': 'BUY', 'type': 'LIMIT', 'timeInForce': 'GTC', 'origQty': 0.01, 'price': 6901.0, 'avgPrice': 0.0, 'stopPrice': 0.0, 'executionType': 'NEW', 'orderStatus': 'NEW', 'orderId': 2705199704, 'lastFilledQty': 0.0, 'cumulativeFilledQty': 0.0, 'lastFilledPrice': 0.0, 'commissionAsset': None, 'commissionAmount': None, 'orderTradeTime': 1587063513589, 'tradeID': 0, 'bidsNotional': 138.81, 'asksNotional': 0.0, 'isMarkerSide': False, 'isReduceOnly': False, 'workingType': 'CONTRACT_PRICE'}
+        
+        {'eventType': 'ACCOUNT_UPDATE', 'eventTime': 1587063874367, 'transactionTime': 1587063874365, 'balances': [<binance_f.model.accountupdate.Balance object at 0x000001FAF470E100>, <binance_f.model.accountupdate.Balance object at 0x000001FAF470E250>], 'positions': [<binance_f.model.accountupdate.Position object at 0x000001FAF470E1C0>]}
+
+'''
         #TODO: implement! (update bars, orders and account)
         if data_type == SubscribeMessageType.RESPONSE:
             print("Event ID: ", event)
         elif  data_type == SubscribeMessageType.PAYLOAD:
             print("Event type: ", event.eventType)
             print("Event time: ", event.eventTime)
-            print("Symbol: ", event.symbol)
-            print("Data:", event.data)
+
+            if(event.eventType == "kline"):
+                print(event)
+                '''
+                         {'eventType': 'kline', 'eventTime': 1587064627164, 'symbol': 'BTCUSDT', 'data': <binance_f.model.candlestickevent.Candlestick object at 0x0000016B89856760>}
+                }'''
+            elif (event.eventType == "ACCOUNT_UPDATE"):
+                ''' {'eventType': 'ACCOUNT_UPDATE', 'eventTime': 1587063874367, 'transactionTime': 1587063874365, 'balances': [<binance_f.model.accountupdate.Balance object at 0x000001FAF470E100>, <binance_f.model.accountupdate.Balance object at 0x000001FAF470E250>], 'positions': [<binance_f.model.accountupdate.Position object at 0x000001FAF470E1C0>]}
+
+                '''
+                print("Transaction time: ", event.transactionTime)
+                print("=== Balances ===", event.balances)
+                print("================")
+                print("=== Positions ===", event.positions)
+                print("================")
+            elif (event.eventType == "ORDER_TRADE_UPDATE"):
+                '''
+                       {'eventType': 'ORDER_TRADE_UPDATE', 'eventTime': 1587063513592, 'transactionTime': 1587063513589, 'symbol': 'BTCUSDT', 'clientOrderId': 'web_ybDNrTjCi765K3AvOMRK', 'side': 'BUY', 'type': 'LIMIT', 'timeInForce': 'GTC', 'origQty': 0.01, 'price': 6901.0, 'avgPrice': 0.0, 'stopPrice': 0.0, 'executionType': 'NEW', 'orderStatus': 'NEW', 'orderId': 2705199704, 'lastFilledQty': 0.0, 'cumulativeFilledQty': 0.0, 'lastFilledPrice': 0.0, 'commissionAsset': None, 'commissionAmount': None, 'orderTradeTime': 1587063513589, 'tradeID': 0, 'bidsNotional': 138.81, 'asksNotional': 0.0, 'isMarkerSide': False, 'isReduceOnly': False, 'workingType': 'CONTRACT_PRICE'}
+                '''
+                print("Transaction Time: ", event.transactionTime)
+                print("Symbol: ", event.symbol)
+                print("Client Order Id: ", event.clientOrderId)
+                print("Side: ", event.side)
+                print("Order Type: ", event.type)
+                print("Time in Force: ", event.timeInForce)
+                print("Original Quantity: ", event.origQty)
+                print("Price: ", event.price)
+                print("Average Price: ", event.avgPrice)
+                print("Stop Price: ", event.stopPrice)
+                print("Execution Type: ", event.executionType)
+                print("Order Status: ", event.orderStatus)
+                print("Order Id: ", event.orderId)
+                print("Order Last Filled Quantity: ", event.lastFilledQty)
+                print("Order Filled Accumulated Quantity: ", event.cumulativeFilledQty)
+                print("Last Filled Price: ", event.lastFilledPrice)
+                print("Commission Asset: ", event.commissionAsset)
+                print("Commissions: ", event.commissionAmount)
+                print("Order Trade Time: ", event.orderTradeTime)
+                print("Trade Id: ", event.tradeID)
+                print("Bids Notional: ", event.bidsNotional)
+                print("Ask Notional: ", event.asksNotional)
+                print("Is this trade the maker side?: ", event.isMarkerSide)
+                print("Is this reduce only: ", event.isReduceOnly)
+                print("stop price working type: ", event.workingType)
         else:
             print("Unknown Data:")
         print()
