@@ -13,19 +13,19 @@ if you like it and wanna start a trading account, feel free to use the ref links
 
 [bitmex (saves 10% fees for 6 months)](https://www.bitmex.com/register/8cXfka)
 
-[binance (svaes you 10% of fees)](https://www.binance.com/en/register?ref=NV9XQ2JE)
+[binance (saves you 10% of fees)](https://www.binance.com/en/register?ref=NV9XQ2JE)
 
 ## required pip packages
-requests
-websocket-client
-future
-plotly
-bybit
-bybit-ws
+- requests
+- websocket-client
+- future
+- plotly
+- bybit
+- bybit-ws
 
 ## disclaimer
 
-right now this is a pure profi tool for my personal use. if you find the code useful thats nice, but don't expect it to be easy to understand or work with it.
+right now this is a pure expert tool for my personal use. if you find the code useful thats nice, but don't expect it to be easy to understand or work with it.
 It also comes with no warranty whatsoever and is for educational purposes only!
 
 ## roots
@@ -52,6 +52,10 @@ future
 websocket-client
 bybit
 ```
+
+## story time
+
+i write twitter threads about my journey and the bot. you can either follow me there @mkuegi or read them [here](docs/aboutCodingABot/readme.md)
 
 ## execution
 
