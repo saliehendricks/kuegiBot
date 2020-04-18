@@ -15,14 +15,6 @@ if you like it and wanna start a trading account, feel free to use the ref links
 
 [binance (saves you 10% of fees)](https://www.binance.com/en/register?ref=NV9XQ2JE)
 
-## required pip packages
-- requests
-- websocket-client
-- future
-- plotly
-- bybit
-- bybit-ws
-
 ## disclaimer
 
 right now this is a pure expert tool for my personal use. if you find the code useful thats nice, but don't expect it to be easy to understand or work with it.
@@ -38,6 +30,11 @@ if this helps you in any way, donations are welcome:
 
 BTC: bc1qj0pnmdfcmssfdwqsts0vlgk59hcnjac6l9wf4f
 
+## story time
+
+i write twitter threads about my journey and the bot. you can either follow me there @mkuegi or read them [here](docs/aboutCodingABot/readme.md)
+
+
 # Getting started
 
 This section describes how to get the environment (i highly recommend virtual environments) set up to run the bot (backtest and trading). As mentioned before, this is highly experimental and use of the bot on real money is not recommended unless you *really* know what you are doing.
@@ -52,10 +49,6 @@ future
 websocket-client
 bybit
 ```
-
-## story time
-
-i write twitter threads about my journey and the bot. you can either follow me there @mkuegi or read them [here](docs/aboutCodingABot/readme.md)
 
 ## execution
 
