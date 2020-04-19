@@ -11,7 +11,8 @@ from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Pos
 class KuegiStrategy(ChannelStrategy):
     def __init__(self, max_channel_size_factor: float = 6, min_channel_size_factor: float = 0,
                  entry_tightening=0, bars_till_cancel_triggered=3,
-                 stop_entry: bool = False, delayed_entry: bool = True, delayed_cancel: bool = False):
+                 stop_entry: bool = False, delayed_entry: bool = True, delayed_cancel: bool = False,
+                 cancel_on_filter:bool = False):
         super().__init__()
         self.max_channel_size_factor = max_channel_size_factor
         self.min_channel_size_factor = min_channel_size_factor
@@ -20,15 +21,17 @@ class KuegiStrategy(ChannelStrategy):
         self.entry_tightening = entry_tightening
         self.bars_till_cancel_triggered = bars_till_cancel_triggered
         self.delayed_cancel = delayed_cancel
+        self.cancel_on_filter = cancel_on_filter
 
     def myId(self):
         return "KuegiStrategy"
 
     def init(self, bars: List[Bar], account: Account, symbol: Symbol):
-        self.logger.info("init with %.0f %.1f  %.1f %i %s %s %s" %
+        self.logger.info("init with %.0f %.1f  %.1f %i %s %s %s  %s" %
                          (self.max_channel_size_factor, self.min_channel_size_factor, self.entry_tightening,
                           self.bars_till_cancel_triggered,
-                          self.stop_entry, self.delayed_entry, self.delayed_cancel))
+                          self.stop_entry, self.delayed_entry, self.delayed_cancel,
+                          self.cancel_on_filter))
         super().init(bars, account, symbol)
 
     def owns_signal_id(self, signalId: str):
@@ -78,7 +81,9 @@ class KuegiStrategy(ChannelStrategy):
                 self.logger.info("canceling not filled position: " + position.id)
                 to_cancel.append(order)
 
-        if orderType == OrderType.ENTRY and (data.longSwing is None or data.shortSwing is None):
+        if orderType == OrderType.ENTRY and\
+                (data.longSwing is None or data.shortSwing is None or
+                 (self.cancel_on_filter and not self.entries_allowed(bars))):
             if position.status == PositionStatus.PENDING:  # don't delete if triggered
                 self.logger.info("canceling cause channel got invalid: " + position.id)
                 to_cancel.append(order)
@@ -96,9 +101,10 @@ class KuegiStrategy(ChannelStrategy):
         if (not is_new_bar) or len(bars) < 5:
             return  # only open orders on beginning of bar
 
-        if not self.entries_allowed(bars):
-            self.logger.info(" no entries allowed")
-            return
+        entriesAllowed= self.entries_allowed(bars)
+        if not entriesAllowed:
+            self.logger.info("new entries not allowed by filter")
+
 
         last_data: Data = self.channel.get_data(bars[2])
         data: Data = self.channel.get_data(bars[1])
@@ -187,14 +193,14 @@ class KuegiStrategy(ChannelStrategy):
                 # return
 
                 signalId = 'kuegi+' + str(bars[0].tstamp)
-                if not foundLong and directionFilter >= 0:
+                if not foundLong and directionFilter >= 0 and entriesAllowed:
                     posId = TradingBot.full_pos_id(signalId, PositionDirection.LONG)
                     self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.ENTRY),
                                                           amount=longAmount, stop=longEntry,
                                                           limit=longEntry - 1 if not self.stop_entry else None))
                     open_positions[posId] = Position(id=posId, entry=longEntry, amount=longAmount, stop=stopLong,
                                                      tstamp=bars[0].tstamp)
-                if not foundShort and directionFilter <= 0:
+                if not foundShort and directionFilter <= 0 and entriesAllowed:
                     posId = TradingBot.full_pos_id(signalId, PositionDirection.SHORT)
                     self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.ENTRY),
                                                           amount=shortAmount, stop=shortEntry,

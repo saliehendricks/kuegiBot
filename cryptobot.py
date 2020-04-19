@@ -40,7 +40,8 @@ def start_bot(botSettings):
                                       bars_till_cancel_triggered=stratSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
                                       stop_entry=stratSettings.KB_STOP_ENTRY,
                                       delayed_entry=stratSettings.KB_DELAYED_ENTRY,
-                                      delayed_cancel=stratSettings.KB_DELAYED_CANCEL) \
+                                      delayed_cancel=stratSettings.KB_DELAYED_CANCEL,
+                                      cancel_on_filter=stratSettings.KB_CANCEL_ON_FILTER) \
                     .withChannel(max_look_back=stratSettings.KB_MAX_LOOK_BACK,
                                  threshold_factor=stratSettings.KB_THRESHOLD_FACTOR,
                                  buffer_factor=stratSettings.KB_BUFFER_FACTOR,
@@ -99,7 +100,8 @@ def start_bot(botSettings):
                                            bars_till_cancel_triggered=botSettings.KB_BARS_TILL_CANCEL_TRIGGERED,
                                            stop_entry=botSettings.KB_STOP_ENTRY,
                                            delayed_entry=botSettings.KB_DELAYED_ENTRY,
-                                           delayed_cancel=botSettings.KB_DELAYED_CANCEL)
+                                           delayed_cancel=botSettings.KB_DELAYED_CANCEL,
+                                           cancel_on_filter=botSettings.KB_CANCEL_ON_FILTER)
                              .withChannel(max_look_back=botSettings.KB_MAX_LOOK_BACK,
                                           threshold_factor=botSettings.KB_THRESHOLD_FACTOR,
                                           buffer_factor=botSettings.KB_BUFFER_FACTOR,
