@@ -28,7 +28,7 @@ started with code from https://github.com/BitMEX/sample-market-maker (connector 
 
 if this helps you in any way, donations are welcome: 
 
-BTC: bc1qj0pnmdfcmssfdwqsts0vlgk59hcnjac6l9wf4f
+BTC: bc1qfdm2z0xpe7lg70try8x3n3qytrjqzq5y2v6d5n
 
 ## story time
 
