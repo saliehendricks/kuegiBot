@@ -29,6 +29,4 @@ You need to prepare for the case that your bot thinks it has positions open, but
 
 My main concept behind everything: better miss a position than do more harm. So if the bot is in doubt he better cancels the assumed position, than increase exposure in the market etc. maybe not the smartest way but makes me sleep easier at night. 13/14
 
-histor
-
 
