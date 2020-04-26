@@ -5,5 +5,5 @@ As this whole repo is mainly for myself to code and document stuff, this part is
 - Storytime: [Starting as a trader](startingAsATrader.md)
 - Don't plan a plan if you can't follow throu: [How i became profitable](howIBecameProfitable.md)
 - The structure behind: [my own trading framework in python](myOwnTradingFramework.md)
-- How to survive the learning curve: Riskmanagement
+- How to survive the learning curve: [Riskmanagement](riskmanagement.md)
 - Size matters: Performance numbers and which i like
