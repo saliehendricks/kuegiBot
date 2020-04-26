@@ -18,18 +18,28 @@ print("crawling from "+exchange)
 
 batchsize = 50000
 
-URL = "https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&partial=false&symbol=XBTUSD&count=1000&reverse=false"
+urls = {
+    "bitmex": "https://www.bitmex.com/api/v1/trade/bucketed?binSize=1m&partial=false&symbol=XBTUSD&count=1000&reverse=false",
+    "bybit": "https://api.bybit.com/v2/public/kline/list?symbol=BTCUSD&interval=1",
+    "binance": "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1m&limit=1000",
+    "binanceSpot": "https://api.binance.com/api/v1/klines?symbol=BTCUSDT&interval=1m&limit=1000"
+}
 
-if exchange == 'bybit':
-    URL= "https://api.bybit.com/v2/public/kline/list?symbol=BTCUSD&interval=1"
+URL = urls[exchange]
 
-result= []
-start= 1 if exchange == 'bybit' else 0
-offset= 0
+result = []
+start = 1 if exchange == 'bybit' else 0
+offset = 0
 
-#init
+# init
 # TODO: adapt this to your number if you already have history files
-lastknown= 14 if exchange == 'bybit' else 45
+filecount = {
+    "bitmex": 45,
+    "bybit": 14,
+    "binance": 6,
+    "binanceSpot": 28
+}
+lastknown = filecount[exchange]
 
 try:
     os.makedirs('history/'+exchange)
@@ -40,7 +50,12 @@ if lastknown >= 0:
     try:
         with open('history/'+exchange+'/M1_' + str(lastknown) + '.json', 'r') as file:
             result = json.load(file)
-            start = int(result[-1]['open_time']) + 1 if exchange == 'bybit' else lastknown * batchsize + len(result)
+            if exchange == 'bitmex':
+                start = lastknown * batchsize + len(result)
+            elif exchange == 'bybit':
+                start = int(result[-1]['open_time']) + 1
+            elif exchange in ['binance','binanceSpot']:
+                start= int(result[-1][6])
             offset= lastknown*batchsize
     except:
         print("lier! you didn't have any history yet!")
@@ -53,6 +68,8 @@ while True:
     url= URL+"&start="+str(start)
     if exchange == 'bybit':
         url = URL + "&from=" + str(start)
+    elif exchange in ['binance','binanceSpot']:
+        url= URL + "&startTime="+str(start)
     print(url+" __ "+str(len(result)))
     r = requests.get(url=url)
     # extracting data in json format
@@ -69,8 +86,12 @@ while True:
                 b['tstamp'] = parse_utc_timestamp(b['timestamp'])
         result += data
         lastSync += len(data)
-        start = int(data[-1]['open_time'])+1 if exchange == 'bybit' else start + len(data)
-
+        if exchange == 'bitmex':
+            start= start +len(data)
+        elif exchange == 'bybit':
+            start = int(data[-1]['open_time'])+1
+        elif exchange in ['binance','binanceSpot']:
+            start= data[-1][6] # closeTime of last bar
     if lastSync > 15000 or (len(data) < 200 and not wroteData):
         wroteData= True
         lastSync= 0

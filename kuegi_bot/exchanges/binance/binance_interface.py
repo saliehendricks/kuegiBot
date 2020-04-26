@@ -235,10 +235,16 @@ class BinanceInterface(ExchangeInterface):
             subbars.append(self.convertBar(b))
         return process_low_tf_bars(subbars, timeframe_minutes, start_offset_minutes)
 
-    def convertBar(self, apiBar: binance_f.model.candlestick.Candlestick):
+    @staticmethod
+    def convertBar(apiBar: binance_f.model.candlestick.Candlestick):
         return Bar(tstamp=apiBar.openTime / 1000, open=apiBar.open, high=apiBar.high, low=apiBar.low,
                    close=apiBar.close,
                    volume=apiBar.volume)
+
+    @staticmethod
+    def barArrayToBar(b):
+        return Bar(tstamp=b[0] / 1000, open=float(b[1]), high=float(b[2]), low=float(b[3]),
+                   close=float(b[4]), volume=float(b[5]))
 
     def get_instrument(self, symbol=None):
         if symbol is None:

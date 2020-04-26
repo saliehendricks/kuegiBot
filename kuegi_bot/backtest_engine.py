@@ -190,7 +190,8 @@ class BackTest(OrderInterface):
         if dd > self.maxDD:
             self.maxDD = max(self.maxDD, dd)
 
-        self.maxExposure= max(self.maxExposure,abs(self.account.open_position.quantity)/self.current_bars[0].close)
+        exposure= abs(self.account.open_position.quantity)* (1/self.current_bars[0].close if self.symbol.isInverse else self.current_bars[0].close)
+        self.maxExposure= max(self.maxExposure,exposure)
         if self.account.equity < self.hh:
             self.underwater += 1
         else:
@@ -200,7 +201,7 @@ class BackTest(OrderInterface):
     def run(self):
         self.reset()
         logger.info(
-            "starting backtest with " + str(len(self.bars)) + " bars and " + str(self.account.equity) + "BTC equity")
+            "starting backtest with " + str(len(self.bars)) + " bars and " + str(self.account.equity) + " equity")
         for i in range(len(self.bars)):
             if i == len(self.bars) - 1 or i < self.bot.min_bars_needed():
                 continue  # ignore last bar and first 5
@@ -254,7 +255,7 @@ class BackTest(OrderInterface):
                     + " | profit: " + ("%.2f" % (100 * profit / self.initialEquity))
                     + " | HH: " + ("%.2f" % (100 * (self.hh / self.initialEquity - 1)))
                     + " | maxDD: " + ("%.2f" % (100 * self.maxDD / self.initialEquity))
-                    + " | maxExp: " + ("%.2f" % self.maxExposure)
+                    + " | maxExp: " + ("%.2f" % (self.maxExposure / self.initialEquity))
                     + " | rel: " + ("%.2f" % (rel_per_year))
                     + " | UW days: " + ("%.1f" % (self.max_underwater / uw_updates_per_day))
                     + " | pos days: " + ("%.1f/%.1f/%.1f" % (minDays,daysInPos,maxDays))

@@ -4,6 +4,7 @@ import sys
 from datetime import datetime
 from typing import List
 
+from kuegi_bot.exchanges.binance.binance_interface import BinanceInterface
 from kuegi_bot.exchanges.bybit.bybit_interface import ByBitInterface
 from kuegi_bot.indicator import Indicator
 from kuegi_bot.exchanges.bitmex.bitmex_interface import BitmexInterface
@@ -47,7 +48,13 @@ def load_settings_from_args():
 
 
 def load_bars(days_in_history, wanted_tf, start_offset_minutes=0,exchange='bitmex'):
-    end = 45 if exchange == 'bitmex' else 14
+    knownfiles= {
+        "bitmex": 45,
+        "bybit": 14,
+        "binance": 6,
+        "binanceSpot": 28
+    }
+    end = knownfiles[exchange]
     start = max(0,end - int(days_in_history * 1440 / 50000))
     m1_bars = []
     logger.info("loading " + str(end - start) + " history files from "+exchange)
@@ -57,16 +64,17 @@ def load_bars(days_in_history, wanted_tf, start_offset_minutes=0,exchange='bitme
     logger.info("done loading files, now preparing them")
 
     subbars: List[Bar] = []
-    if exchange == 'bybit':
-        for b in m1_bars:
+    for b in m1_bars:
+        if exchange == 'bybit':
             if b['open'] is None:
                 continue
             subbars.append(ByBitInterface.barDictToBar(b))
-    else:
-        for b in m1_bars:
+        elif exchange == 'bitmex':
             if b['open'] is None:
                 continue
             subbars.append(BitmexInterface.barDictToBar(b,wanted_tf))
+        elif exchange in ['binance','binanceSpot']:
+            subbars.append(BinanceInterface.barArrayToBar(b))
     subbars.reverse()
     return process_low_tf_bars(subbars, wanted_tf, start_offset_minutes)
 
