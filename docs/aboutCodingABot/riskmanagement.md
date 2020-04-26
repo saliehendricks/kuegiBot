@@ -1,3 +1,5 @@
+https://twitter.com/mkuegi/status/1254395889570979841?s=20
+
 40% of traders quit after 1 month. Only 7% make it for 5 years. If you manage to survive the first years you probably get successful. It took me 2.5 years. And i made back the losses of 2.5 years in 3 months. How: risk- and Moneymanagement. a thread. 
 
 RM is what makes you survive your drawdowns. If you have no edge yet, it makes you survive the time until you find one. To have meaningful RM, you need numbers: Your max Drawdown, your max loosing streak, your max handleable drop in accountsize.

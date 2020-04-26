@@ -6,4 +6,5 @@ As this whole repo is mainly for myself to code and document stuff, this part is
 - Don't plan a plan if you can't follow throu: [How i became profitable](howIBecameProfitable.md)
 - The structure behind: [my own trading framework in python](myOwnTradingFramework.md)
 - How to survive the learning curve: [Riskmanagement](riskmanagement.md)
+- How to build an automated trading system
 - Size matters: Performance numbers and which i like

@@ -1,3 +1,5 @@
+https://twitter.com/mkuegi/status/1251223614424317953?s=20
+
 After realising that my edge is fully automizable, i implemented it in python. But since i have to trust that bot with a lot of money (at least i plan to) i really need to know what its doing. so i decided to write the whole thing from scratch: a thread. 1/14
 
 Disclaimer: This is how i did it based on my own exp and knowledge. Doesn't mean its smart to do it that way. Probably introduced lots of bugs, but so far its executing pretty good. And yes will open source it if ppl are interested. 2/14

@@ -1,3 +1,4 @@
+https://twitter.com/mkuegi/status/1249711458184835077?s=20
 
 I came back to BTC early 2017 and discovered crypto-exchanges around mid 2017. switched from gambling to trading early 2019 and became netto profitable early 2020.
 it was probably the classic story of a rookie trader: a long thread. 1/

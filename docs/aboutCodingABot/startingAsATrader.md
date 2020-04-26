@@ -1,3 +1,5 @@
+https://twitter.com/mkuegi/status/1249076445432987659?s=20
+
 I started coding trading bots at the university (back in 2004) but didn't become profitable until recently.
 Sounds worse than it is, i had a 7 year break, but still. There is a lesson here. thread incoming. 1/
 
