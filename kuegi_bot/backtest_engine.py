@@ -32,7 +32,7 @@ class SilentLogger(object):
 
 class BackTest(OrderInterface):
 
-    def __init__(self, bot: TradingBot, bars: list):
+    def __init__(self, bot: TradingBot, bars: list,symbol:Symbol=None):
         self.bars: List[Bar] = bars
         self.bot = bot
         self.bot.prepare(SilentLogger(),self)
@@ -41,8 +41,11 @@ class BackTest(OrderInterface):
         self.maker_fee = -0.00025
         self.taker_fee = 0.00075
 
-        self.symbol: Symbol = Symbol(symbol="XBTUSD", isInverse=True, tickSize=0.5, lotSize=1, makerFee=-0.00025,
-                                     takerFee=0.00075)
+        if symbol is not None:
+            self.symbol= symbol
+        else:
+            self.symbol: Symbol = Symbol(symbol="XBTUSD", isInverse=True, tickSize=0.5, lotSize=1, makerFee=-0.00025,
+                                         takerFee=0.00075)
 
         self.account: Account = None
         self.initialEquity = 100  # BTC

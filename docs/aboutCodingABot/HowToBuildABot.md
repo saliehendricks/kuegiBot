@@ -1,3 +1,4 @@
+https://twitter.com/mkuegi/status/1254494415583948801?s=20
 
 Let's say you found a #trading strategy that works, but executing it flawlessly is challenging. So you want to build it into a bot that does all the hard work for you? Then this thread is for you.
  
