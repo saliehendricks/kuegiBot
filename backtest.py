@@ -1,3 +1,5 @@
+import random
+
 from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
 from kuegi_bot.bots.strategies.entry_filters import DayOfWeekFilter
@@ -43,10 +45,14 @@ def increment(min,max,steps,current)->bool:
             return False
 
 
-def runOpti(bars,min,max,steps,symbol= None):
+def runOpti(bars,min,max,steps,symbol= None, randomCount= -1):
     v= min[:]
     while True:
         msg= ""
+        if randomCount > 0:
+            for i in range(len(v)):
+                v[i] = min[i] + random.randint(0, (max[i] - min[i]) / steps[i]) * steps[i]
+            randomCount = randomCount-1
         for i in v:
             msg += str(i) + " "
         logger.info(msg)
@@ -65,8 +71,9 @@ def runOpti(bars,min,max,steps,symbol= None):
                          )
         BackTest(bot, bars,symbol).run()
 
-        if not increment(min,max,steps,v):
+        if randomCount == 0 or (randomCount < 0 and not increment(min,max,steps,v)):
             break
+
 
 def checkDayFilterByDay(bars,symbol= None):
     for i in range(7):
@@ -110,7 +117,8 @@ runOpti(bars_n,
         [1,1 ,0.5,2 ,2 ,5 ,  2],
         symbol=Symbol(symbol="BTCUSDT", isInverse=False, tickSize=0.001,
                                       lotSize=0.00001, makerFee=0.02,
-                                     takerFee=0.04))
+                                     takerFee=0.04),
+        randomCount=500)
 
 
 '''
