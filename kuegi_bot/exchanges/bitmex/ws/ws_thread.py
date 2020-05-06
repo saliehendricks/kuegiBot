@@ -266,7 +266,7 @@ class BitMEXWebsocket():
                             is_canceled = 'ordStatus' in updateData and updateData['ordStatus'] == 'Canceled'
                             if 'cumQty' in updateData and not is_canceled:
                                 contExecuted = updateData['cumQty'] - item['cumQty']
-                                if contExecuted > 0:
+                                if contExecuted > 0 and item['price'] is not None:
                                     instrument = self.get_instrument(item['symbol'])
                                     self.logger.info("Execution: %s %d Contracts of %s at %.*f" %
                                              (item['side'], contExecuted, item['symbol'],
@@ -286,7 +286,7 @@ class BitMEXWebsocket():
                 if self.callback is not None:
                     self.callback(table)
         except:
-            self.logger.error(traceback.format_exc())
+            self.logger.error(traceback.format_exc())tr
 
     def __on_open(self):
         self.logger.debug("Websocket Opened.")

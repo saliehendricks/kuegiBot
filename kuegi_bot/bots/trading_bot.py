@@ -317,9 +317,13 @@ class TradingBot:
                 # not sure why: in doubt: not create wrong orders
                 if remainingPosition * pos.amount > 0 and abs(remainingPosition) >= abs(pos.amount):
                     # assume position was opened without us realizing (during downtime)
+                    self.logger.warn(
+                        "pending position with no entry order but open position looks like it was opened: %s" % (posId))
                     self.handle_opened_position(position=pos, order=None, bars=bars, account=account)
                     remainingPosition -= pos.amount
                 else:
+                    self.logger.warn(
+                        "pending position with no entry order and no sign of opening -> close missed: %s" % (posId))
                     pos.status = PositionStatus.MISSED
                     self.position_closed(pos, account)
             elif pos.status == PositionStatus.OPEN:
@@ -337,6 +341,8 @@ class TradingBot:
                     self.position_closed(pos, account)
                     remainingPosition += pos.amount
             else:
+                self.logger.warn(
+                        "pending position with noconnection order not pending or open? closed: %s" % (posId))
                 self.position_closed(pos, account)
 
         # now there should not be any mismatch between positions and orders.

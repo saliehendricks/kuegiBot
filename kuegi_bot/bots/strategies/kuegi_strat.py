@@ -43,15 +43,23 @@ class KuegiStrategy(ChannelStrategy):
             open_positions[other_id].markForCancel = bars[0].tstamp
 
         # add stop
-        order = Order(orderId=TradingBot.generate_order_id(positionId=position.id,
+        gotStop= False # safety check needed to not add multiple SL in case of an error
+        for order in account.open_orders:
+            orderType = TradingBot.order_type_from_order_id(order.id)
+            posId = TradingBot.position_id_from_order_id(order.id)
+            if orderType == OrderType.SL and posId == position.id:
+                gotStop= True
+                break
+        if not gotStop:
+            order = Order(orderId=TradingBot.generate_order_id(positionId=position.id,
                                                            type=OrderType.SL),
                       stop=position.initial_stop,
                       amount=-position.amount)
-        self.order_interface.send_order(order)
-        # added temporarily, cause sync with open orders is in the next loop and otherwise the orders vs
-        # position check fails
-        if order not in account.open_orders:  # outside world might have already added it
-            account.open_orders.append(order)
+            self.order_interface.send_order(order)
+            # added temporarily, cause sync with open orders is in the next loop and otherwise the orders vs
+            # position check fails
+            if order not in account.open_orders:  # outside world might have already added it
+                account.open_orders.append(order)
 
     def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
         super().manage_open_order(order, position, bars, to_update, to_cancel, open_positions)
