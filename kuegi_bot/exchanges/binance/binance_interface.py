@@ -30,6 +30,7 @@ class BinanceInterface(ExchangeInterface):
         self.last = 0
         self.open = False
         self.listen_key = ""
+        self.lastUserDataKeep = None
         self.init()
 
     def init(self):
@@ -40,8 +41,8 @@ class BinanceInterface(ExchangeInterface):
         self.listen_key = self.client.start_user_data_stream()
 
         self.ws.subscribe_user_data_event(self.listen_key, self.callback, self.error)
-        subbarsIntervall = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
-        self.ws.subscribe_candlestick_event(self.symbol, subbarsIntervall, self.callback, self.error)
+        subInt = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
+        self.ws.subscribe_candlestick_event(self.symbol, subInt, self.callback, self.error)
         self.open = True
         self.lastUserDataKeep = time.time()
         self.logger.info("ready to go")
@@ -52,9 +53,9 @@ class BinanceInterface(ExchangeInterface):
         if self.lastUserDataKeep < time.time() - 15 * 60:
             self.lastUserDataKeep = time.time()
             self.client.keep_user_data_stream()
-        # TODO: implement! (update bars, orders and account)
+
         if data_type == SubscribeMessageType.RESPONSE:
-            pass # what to do herE?
+            pass  # what to do herE?
         elif data_type == SubscribeMessageType.PAYLOAD:
             if event.eventType == "kline":
                 # {'eventType': 'kline', 'eventTime': 1587064627164, 'symbol': 'BTCUSDT',
@@ -62,7 +63,7 @@ class BinanceInterface(ExchangeInterface):
                 if event.symbol == self.symbol:
                     candle: Candlestick = event.data
                     if len(self.candles) > 0:
-                        if candle.startTime <= self.candles[0].startTime and candle.startTime > self.candles[-1].startTime:
+                        if self.candles[0].startTime >= candle.startTime > self.candles[-1].startTime:
                             # somewhere inbetween to replace
                             for idx in range(0, len(self.candles)):
                                 if candle.startTime == self.candles[idx].startTime:
@@ -74,7 +75,7 @@ class BinanceInterface(ExchangeInterface):
                     else:
                         self.candles.append(candle)
                         gotTick = True
-            elif (event.eventType == "ACCOUNT_UPDATE"):
+            elif event.eventType == "ACCOUNT_UPDATE":
                 # {'eventType': 'ACCOUNT_UPDATE', 'eventTime': 1587063874367, 'transactionTime': 1587063874365,
                 # 'balances': [<binance_f.model.accountupdate.Balance object at 0x000001FAF470E100>,...],
                 # 'positions': [<binance_f.model.accountupdate.Position object at 0x000001FAF470E1C0>...]}
@@ -86,18 +87,19 @@ class BinanceInterface(ExchangeInterface):
                 for p in event.positions:
                     pos: Position = p
                     if pos.symbol not in self.positions.keys():
-                        self.positions[pos.symbol] = AccountPosition(pos.symbol,
-                                                                        avgEntryPrice=float(pos.entryPrice),
-                                                                        quantity=float(pos.amount),
-                                                                     walletBalance=usdBalance if "USDT" in pos.symbol else 0)
+                        self.positions[pos.symbol] = AccountPosition(
+                                                         symbol=pos.symbol,
+                                                         avgEntryPrice=float(pos.entryPrice),
+                                                         quantity=float(pos.amount),
+                                                         walletBalance=usdBalance if "USDT" in pos.symbol else 0)
                     else:
                         accountPos = self.positions[pos.symbol]
                         accountPos.quantity = float(pos.amount)
                         accountPos.avgEntryPrice = float(pos.entryPrice)
                         if "USDT" in pos.symbol:
-                            accountPos.walletBalance= usdBalance
+                            accountPos.walletBalance = usdBalance
 
-            elif (event.eventType == "ORDER_TRADE_UPDATE"):
+            elif event.eventType == "ORDER_TRADE_UPDATE":
                 # {'eventType': 'ORDER_TRADE_UPDATE', 'eventTime': 1587063513592, 'transactionTime': 1587063513589,
                 # 'symbol': 'BTCUSDT', 'clientOrderId': 'web_ybDNrTjCi765K3AvOMRK', 'side': 'BUY', 'type': 'LIMIT',
                 # 'timeInForce': 'GTC', 'origQty': 0.01, 'price': 6901.0, 'avgPrice': 0.0, 'stopPrice': 0.0,
@@ -105,26 +107,26 @@ class BinanceInterface(ExchangeInterface):
                 # 'cumulativeFilledQty': 0.0, 'lastFilledPrice': 0.0, 'commissionAsset': None, 'commissionAmount': None,
                 # 'orderTradeTime': 1587063513589, 'tradeID': 0, 'bidsNotional': 138.81, 'asksNotional': 0.0,
                 # 'isMarkerSide': False, 'isReduceOnly': False, 'workingType': 'CONTRACT_PRICE'}
-                sideMulti= 1 if event.side == 'BUY' else -1
-                order:Order = Order(orderId=event.clientOrderId,
-                                    stop= event.stopPrice,
-                                    limit= event.price,
-                                    amount=event.origQty*sideMulti
-                                    )
-                order.exchange_id= event.orderId
-                #FIXME: how do i know stop triggered on binance?
-                #order.stop_triggered =
-                order.executed_amount= event.cumulativeFilledQty *sideMulti
-                order.executed_price= event.avgPrice
-                order.tstamp= event.transactionTime
-                order.execution_tstamp= event.orderTradeTime
+                sideMulti = 1 if event.side == 'BUY' else -1
+                order: Order = Order(orderId=event.clientOrderId,
+                                     stop=event.stopPrice,
+                                     limit=event.price,
+                                     amount=event.origQty * sideMulti
+                                     )
+                order.exchange_id = event.orderId
+                # FIXME: how do i know stop triggered on binance?
+                # order.stop_triggered =
+                order.executed_amount = event.cumulativeFilledQty * sideMulti
+                order.executed_price = event.avgPrice
+                order.tstamp = event.transactionTime
+                order.execution_tstamp = event.orderTradeTime
 
                 prev: Order = self.orders[order.exchange_id] if order.exchange_id in self.orders.keys() else None
                 if prev is not None:
                     if prev.tstamp > order.tstamp or abs(prev.executed_amount) > abs(order.executed_amount):
                         # already got newer information, probably the info of the stop order getting
                         # triggered, when i already got the info about execution
-                        self.logger.info("ignoring delayed update for %s " % (prev.id))
+                        self.logger.info("ignoring delayed update for %s " % prev.id)
                     if order.stop_price is None:
                         order.stop_price = prev.stop_price
                     if order.limit_price is None:
@@ -152,7 +154,8 @@ class BinanceInterface(ExchangeInterface):
             if order.active:
                 self.orders[order.exchange_id] = order
 
-    def convertOrder(self, apiOrder: binance_f.model.Order) -> Order:
+    @staticmethod
+    def convertOrder(apiOrder: binance_f.model.Order) -> Order:
         direction = 1 if apiOrder.side == OrderSide.BUY else -1
         order = Order(orderId=apiOrder.clientOrderId,
                       amount=apiOrder.origQty * direction,
@@ -194,7 +197,6 @@ class BinanceInterface(ExchangeInterface):
         self.client.cancel_order(symbol=self.symbol, origClientOrderId=order.id)
 
     def internal_send_order(self, order: Order):
-        order_type = OrderType.MARKET
         if order.limit_price is not None:
             if order.stop_price is not None:
                 order_type = OrderType.STOP
@@ -203,13 +205,14 @@ class BinanceInterface(ExchangeInterface):
         else:
             order_type = OrderType.STOP_MARKET
 
-        resultOrder: binance_f.model.Order = self.client.post_order(symbol=self.symbol,
-                                                                    side=OrderSide.BUY if order.amount > 0 else OrderSide.SELL,
-                                                                    ordertype=order_type,
-                                                                    timeInForce=TimeInForce.GTC,
-                                                                    quantity=abs(order.amount),
-                                                                    price=order.limit_price, stopPrice=order.stop_price,
-                                                                    newClientOrderId=order.id)
+        resultOrder: binance_f.model.Order = self.client.post_order(
+                                                            symbol=self.symbol,
+                                                            side=OrderSide.BUY if order.amount > 0 else OrderSide.SELL,
+                                                            ordertype=order_type,
+                                                            timeInForce=TimeInForce.GTC,
+                                                            quantity=abs(order.amount),
+                                                            price=order.limit_price, stopPrice=order.stop_price,
+                                                            newClientOrderId=order.id)
         order.exchange_id = resultOrder.orderId
 
     def internal_update_order(self, order: Order):
@@ -227,7 +230,7 @@ class BinanceInterface(ExchangeInterface):
         return self._aggregate_bars(reversed(bars), timeframe_minutes, start_offset_minutes)
 
     def recent_bars(self, timeframe_minutes, start_offset_minutes) -> List[Bar]:
-        return self._aggregate_bars(self.bars, timeframe_minutes, start_offset_minutes)
+        return self._aggregate_bars(self.candles, timeframe_minutes, start_offset_minutes)
 
     def _aggregate_bars(self, bars, timeframe_minutes, start_offset_minutes) -> List[Bar]:
         subbars = []
@@ -255,11 +258,11 @@ class BinanceInterface(ExchangeInterface):
                 baseLength = len(symb.baseAsset)
                 lotSize = 0
                 tickSize = 0
-                for filter in symb.filters:
-                    if filter['filterType'] == 'LOT_SIZE':
-                        lotSize = filter['stepSize']
-                    if filter['filterType'] == 'PRICE_FILTER':
-                        tickSize = filter['tickSize']
+                for filterIt in symb.filters:
+                    if filterIt['filterType'] == 'LOT_SIZE':
+                        lotSize = filterIt['stepSize']
+                    if filterIt['filterType'] == 'PRICE_FILTER':
+                        tickSize = filterIt['tickSize']
 
                 return Symbol(symbol=symb.symbol,
                               isInverse=symb.baseAsset != symb.symbol[:baseLength],
@@ -281,4 +284,7 @@ class BinanceInterface(ExchangeInterface):
         return self.open  # TODO: is that the best we can do?
 
     def update_account(self, account: Account):
-        pass
+        pos = self.positions[self.symbol]
+        account.open_position = pos
+        account.equity = pos.walletBalance
+        account.usd_equity = account.equity

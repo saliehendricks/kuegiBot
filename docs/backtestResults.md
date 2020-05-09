@@ -57,7 +57,7 @@ KuegiBot weekdays bybit rel / maxDD:
 ```
     min_channel_size_factor=0, max_channel_size_factor=16,
     entry_tightening=1, bars_till_cancel_triggered=5,
-    stop_entry=True, delayed_entry=True, delayed_cancel=True)
+    stop_entry=True, delayed_entry=True, delayed_cancel=True, cancel_on_filter= False)
                  .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
                  .withRM(risk_factor=1, max_risk_mul=2, risk_type=1, atr_factor=2)
                  .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
@@ -86,6 +86,28 @@ KuegiBot weekdays bybit rel / maxDD:
 ```
 
 ### binance
+
+| | | | | | | | | | | | 
+|---|---|---|---|---|---|---|---|---|---|---|
+ 7mo | pos: 142 | profit: 60.13 | HH: 60.76 | maxDD: 10.97 | maxExp: 1.63 | rel: 8.67 | UW days: 43.8 | pos days: 0.0/1.5/10.7
+
+```
+    min_channel_size_factor=0, max_channel_size_factor=16,
+    entry_tightening=1, bars_till_cancel_triggered=5,
+    stop_entry=True, delayed_entry=True, delayed_cancel=True, cancel_on_filter= False)
+                 .withChannel(max_look_back=16, threshold_factor=2, buffer_factor=-0.05,
+                              max_dist_factor=2, max_swing_length=4)
+                 .withRM(risk_factor=1, max_risk_mul=1.7, risk_type=1, atr_factor=2)
+                 .withExitModule(SimpleBE(factor=0.7, buffer=-0.1))
+                 .withExitModule(SimpleBE(factor=1, buffer=0.4))
+                 #.withExitModule(SimpleBE(factor=1.2, buffer=0.7))
+                 #.withExitModule(SimpleBE(factor=1.5, buffer=0.8))
+                 .withExitModule(SimpleBE(factor=1.9, buffer=0.9))
+                 .withExitModule(SimpleBE(factor=2.1, buffer=1.2))
+                 .withExitModule(ParaTrail(accInit=0.0, accInc=0.03, accMax=0.2))
+          
+```
+
 
 ## SFP
 
