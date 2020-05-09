@@ -9,7 +9,7 @@ No financial advice. Don't use it if you don't understand what it does. You prob
 
 if you like it and wanna start a trading account, feel free to use the ref links:
 
-[bybit](https://www.bybit.com/app/register?affiliate_id=4555&language=en&group_id=0&group_type=1)
+[bybit](https://www.bybit.com/en/register?affiliate_id=4555&language=en&group_id=0&group_type=1)
 
 [bitmex (saves 10% fees for 6 months)](https://www.bitmex.com/register/8cXfka)
 
