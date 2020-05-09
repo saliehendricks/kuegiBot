@@ -286,7 +286,7 @@ class BitMEXWebsocket():
                 if self.callback is not None:
                     self.callback(table)
         except:
-            self.logger.error(traceback.format_exc())tr
+            self.logger.error(traceback.format_exc())
 
     def __on_open(self):
         self.logger.debug("Websocket Opened.")
