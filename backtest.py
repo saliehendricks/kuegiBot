@@ -57,17 +57,7 @@ def runOpti(bars,min,max,steps,symbol= None, randomCount= -1):
             msg += str(i) + " "
         logger.info(msg)
         bot = MultiStrategyBot(logger=logger, directionFilter=0)
-        bot.add_strategy(KuegiStrategy(
-            min_channel_size_factor=v[2], max_channel_size_factor=v[3],
-            entry_tightening=v[1]/10, bars_till_cancel_triggered=5,
-            stop_entry=True, delayed_entry=v[0] == 1, delayed_cancel=True, cancel_on_filter= False)
-                         .withChannel(max_look_back=v[4], threshold_factor=v[5]/10, buffer_factor=v[6]*0.01,
-                                      max_dist_factor=2,max_swing_length=4)
-                         .withRM(risk_factor=1, max_risk_mul=2, risk_type=1, atr_factor=2)
-                         #.withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
-                         #.withExitModule(SimpleBE(factor=1, buffer=0.5))
-                         .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
-                         #.withEntryFilter(DayOfWeekFilter(55))
+        bot.add_strategy(SfpStrategy()
                          )
         BackTest(bot, bars,symbol).run()
 
@@ -80,16 +70,8 @@ def checkDayFilterByDay(bars,symbol= None):
         msg = str(i)
         logger.info(msg)
         bot = MultiStrategyBot(logger=logger, directionFilter=0)
-        bot.add_strategy(KuegiStrategy(
-            min_channel_size_factor=0, max_channel_size_factor=16,
-            entry_tightening=1, bars_till_cancel_triggered=5,
-            stop_entry=True, delayed_entry=True, delayed_cancel=True, cancel_on_filter= False)
-                         .withChannel(max_look_back=13, threshold_factor=2.6, buffer_factor=0.05,max_dist_factor=2,max_swing_length=4)
-                         .withRM(risk_factor=2000, max_risk_mul=2, risk_type=1, atr_factor=2)
-                         .withExitModule(SimpleBE(factor=0.5, buffer=-0.1))
-                         .withExitModule(SimpleBE(factor=1, buffer=0.5))
-                         .withExitModule(ParaTrail(accInit=0.015, accInc=0.015, accMax=0.03))
-                         .withEntryFilter(DayOfWeekFilter(55))
+        bot.add_strategy(SfpStrategy()
+                         .withEntryFilter(DayOfWeekFilter(1 << i))
                          )
 
         b= BackTest(bot, bars,symbol).run()
@@ -111,14 +93,17 @@ bars_n = load_bars(30 * 12, 240,0,'binance')
 
 #checkDayFilterByDay(bars_m)
 
+'''
 runOpti(bars_n,
-        [0,0 ,0  ,10,8 ,5 ,-10],
-        [1,10,2  ,20,16,30, 10],
-        [1,1 ,0.5,2 ,2 ,5 ,  2],
+        min=   [6,0.2,5,50,25,-0.5],
+        max=   [16,0.8,15,90,45,0.5],
+        steps= [2,0.1,1,5,2,0.1],
         symbol=Symbol(symbol="BTCUSDT", isInverse=False, tickSize=0.001,
                                       lotSize=0.00001, makerFee=0.02,
                                      takerFee=0.04),
-        randomCount=500)
+        randomCount=1000)
+
+#'''
 
 
 '''

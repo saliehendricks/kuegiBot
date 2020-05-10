@@ -18,7 +18,7 @@ class BinanceInterface(ExchangeInterface):
 
     def __init__(self, settings, logger, on_tick_callback=None):
         super().__init__(settings, logger, on_tick_callback)
-        self.symbol = settings.SYMBOL
+        self.symbol : str = settings.SYMBOL
         self.client = RequestClient(api_key=settings.API_KEY,
                                     secret_key=settings.API_SECRET)
         self.ws = SubscriptionClient(api_key=settings.API_KEY,
@@ -39,12 +39,12 @@ class BinanceInterface(ExchangeInterface):
         self.initPositions()
         self.logger.info("got all data. subscribing to live updates.")
         self.listen_key = self.client.start_user_data_stream()
-
-        self.ws.subscribe_user_data_event(self.listen_key, self.callback, self.error)
-        subInt = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
-        self.ws.subscribe_candlestick_event(self.symbol, subInt, self.callback, self.error)
-        self.open = True
         self.lastUserDataKeep = time.time()
+
+        subInt = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
+        self.ws.subscribe_candlestick_event(self.symbol.lower(), subInt, self.callback, self.error)
+        self.ws.subscribe_user_data_event(self.listen_key, self.callback, self.error)
+        self.open = True
         self.logger.info("ready to go")
 
     def callback(self, data_type: 'SubscribeMessageType', event: 'any'):
@@ -227,20 +227,26 @@ class BinanceInterface(ExchangeInterface):
 
         bars = self.client.get_candlestick_data(symbol=self.symbol, interval=tf, limit=1000)
 
-        return self._aggregate_bars(reversed(bars), timeframe_minutes, start_offset_minutes)
+        subbars = []
+        for b in reversed(bars):
+            subbars.append(self.convertBar(b))
+        return process_low_tf_bars(subbars, timeframe_minutes, start_offset_minutes)
 
     def recent_bars(self, timeframe_minutes, start_offset_minutes) -> List[Bar]:
-        return self._aggregate_bars(self.candles, timeframe_minutes, start_offset_minutes)
-
-    def _aggregate_bars(self, bars, timeframe_minutes, start_offset_minutes) -> List[Bar]:
         subbars = []
-        for b in bars:
-            subbars.append(self.convertBar(b))
+        for b in self.candles:
+            subbars.append(self.convertBarevent(b))
         return process_low_tf_bars(subbars, timeframe_minutes, start_offset_minutes)
 
     @staticmethod
     def convertBar(apiBar: binance_f.model.candlestick.Candlestick):
         return Bar(tstamp=apiBar.openTime / 1000, open=float(apiBar.open), high=float(apiBar.high), low=float(apiBar.low),
+                   close=float(apiBar.close),
+                   volume=float(apiBar.volume))
+
+    @staticmethod
+    def convertBarevent(apiBar: binance_f.model.candlestickevent.Candlestick):
+        return Bar(tstamp=apiBar.startTime / 1000, open=float(apiBar.open), high=float(apiBar.high), low=float(apiBar.low),
                    close=float(apiBar.close),
                    volume=float(apiBar.volume))
 
