@@ -80,9 +80,12 @@ def start_bot(botSettings):
                 if "KB_BE_FACTOR" in stratSettings.keys():
                     strat.withExitModule(SimpleBE(factor=stratSettings.KB_BE_FACTOR,
                                                   buffer=stratSettings.KB_BE_BUFFER))
-                if "KB_BE2_FACTOR" in stratSettings.keys():
-                    strat.withExitModule(SimpleBE(factor=stratSettings.KB_BE2_FACTOR,
-                                                  buffer=stratSettings.KB_BE2_BUFFER))
+                for i in range(1,8):
+                    factorKey= "KB_BE"+str(i)+"_FACTOR"
+                    bufferKey= "KB_BE"+str(i)+"_BUFFER"
+                    if factorKey in stratSettings.keys():
+                        strat.withExitModule(SimpleBE(factor=stratSettings[factorKey],
+                                                      buffer=stratSettings[bufferKey]))
                 if "EM_PARA_INIT" in stratSettings.keys():
                     strat.withExitModule(ParaTrail(accInit=stratSettings.EM_PARA_INIT,
                                                    accInc=stratSettings.EM_PARA_INC,
@@ -186,18 +189,31 @@ def run(settings):
     logger.info("init done")
 
     if len(activeThreads) > 0:
+        failures= 0
         while True:
             sleep(1)
             allActive = True
+            toRestart= []
+            toRemove= []
             for thread in activeThreads:
                 if not thread.is_alive() or not thread.bot.alive:
-                    allActive = False
-                    logger.info("%s died." % thread.bot.id)
-                    break
+                    logger.info("%s died. stopping" % thread.bot.id)
+                    toRestart.append(thread.bot.settings)
+                    thread.bot.exit()
+                    toRemove.append(thread)
+                    failures = failures + 1
+            for thread in toRemove:
+                activeThreads.remove(thread)
 
-            if not allActive:
+            if failures > 5:
+                logger.info("too many failures, restart the whole thing")
                 stop_all_and_exit()
                 break
+
+            for usedSettings in toRestart:
+                logger.info("restarting " + usedSettings.id)
+                activeThreads.append(start_bot(usedSettings))
+
             write_dashboard(settings.DASHBOARD_FILE)
 
     else:

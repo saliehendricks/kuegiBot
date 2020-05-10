@@ -6,6 +6,7 @@ import time
 
 import plotly.graph_objects as go
 
+from kuegi_bot.exchanges.binance.binance_interface import BinanceInterface
 from kuegi_bot.exchanges.bitmex.bitmex_interface import BitmexInterface
 from kuegi_bot.exchanges.bybit.bybit_interface import ByBitInterface
 from kuegi_bot.utils import log, errors
@@ -29,6 +30,8 @@ class LiveTrading(OrderInterface):
             self.exchange = BitmexInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
         elif settings.EXCHANGE == 'bybit':
             self.exchange = ByBitInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
+        elif settings.EXCHANGE == 'binance':
+            self.exchange = BinanceInterface(settings=settings, logger=self.logger, on_tick_callback=self.on_tick)
         else:
             self.logger.error("unkown exchange: "+settings.EXCHANGE)
             self.alive= False

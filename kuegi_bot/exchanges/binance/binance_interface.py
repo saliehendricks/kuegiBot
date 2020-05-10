@@ -240,9 +240,9 @@ class BinanceInterface(ExchangeInterface):
 
     @staticmethod
     def convertBar(apiBar: binance_f.model.candlestick.Candlestick):
-        return Bar(tstamp=apiBar.openTime / 1000, open=apiBar.open, high=apiBar.high, low=apiBar.low,
-                   close=apiBar.close,
-                   volume=apiBar.volume)
+        return Bar(tstamp=apiBar.openTime / 1000, open=float(apiBar.open), high=float(apiBar.high), low=float(apiBar.low),
+                   close=float(apiBar.close),
+                   volume=float(apiBar.volume))
 
     @staticmethod
     def barArrayToBar(b):

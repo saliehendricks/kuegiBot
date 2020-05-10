@@ -51,7 +51,7 @@ def runOpti(bars,min,max,steps,symbol= None, randomCount= -1):
         msg= ""
         if randomCount > 0:
             for i in range(len(v)):
-                v[i] = min[i] + random.randint(0, (max[i] - min[i]) / steps[i]) * steps[i]
+                v[i] = min[i] + random.randint(0, int((max[i] - min[i]) / steps[i])) * steps[i]
             randomCount = randomCount-1
         for i in v:
             msg += str(i) + " "
