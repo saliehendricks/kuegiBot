@@ -49,6 +49,7 @@ class BinanceInterface(ExchangeInterface):
 
     def callback(self, data_type: 'SubscribeMessageType', event: 'any'):
         gotTick = False
+        fromAccount= False
         # refresh userdata every 15 min
         if self.lastUserDataKeep < time.time() - 15 * 60:
             self.lastUserDataKeep = time.time()
@@ -80,6 +81,8 @@ class BinanceInterface(ExchangeInterface):
                 # 'balances': [<binance_f.model.accountupdate.Balance object at 0x000001FAF470E100>,...],
                 # 'positions': [<binance_f.model.accountupdate.Position object at 0x000001FAF470E1C0>...]}
                 usdBalance = 0
+                gotTick = True
+                fromAccount= True
                 for b in event.balances:
                     bal: Balance = b
                     if bal.asset == "USDT":
@@ -107,6 +110,8 @@ class BinanceInterface(ExchangeInterface):
                 # 'cumulativeFilledQty': 0.0, 'lastFilledPrice': 0.0, 'commissionAsset': None, 'commissionAmount': None,
                 # 'orderTradeTime': 1587063513589, 'tradeID': 0, 'bidsNotional': 138.81, 'asksNotional': 0.0,
                 # 'isMarkerSide': False, 'isReduceOnly': False, 'workingType': 'CONTRACT_PRICE'}
+                gotTick = True
+                fromAccount= True
                 sideMulti = 1 if event.side == 'BUY' else -1
                 order: Order = Order(orderId=event.clientOrderId,
                                      stop=event.stopPrice,
@@ -141,7 +146,7 @@ class BinanceInterface(ExchangeInterface):
             self.logger.warn("Unknown Data in websocket callback")
 
         if gotTick and self.on_tick_callback is not None:
-            self.on_tick_callback()  # got something new
+            self.on_tick_callback(fromAccountAction=fromAccount)  # got something new
 
     def error(self, e: 'BinanceApiException'):
         self.exit()
@@ -174,7 +179,10 @@ class BinanceInterface(ExchangeInterface):
             if bal.asset == "USDT":
                 usdBalance = bal.balance
         api_positions = self.client.get_position()
-        self.positions[self.symbol] = AccountPosition(self.symbol, 0, 0, 0)
+        self.positions[self.symbol] = AccountPosition(self.symbol,
+                                                     avgEntryPrice=0,
+                                                     quantity=0,
+                                                     walletBalance=usdBalance if "USDT" in self.symbol else 0)
         if api_positions is not None:
             for pos in api_positions:
                 self.positions[pos.symbol] = AccountPosition(pos.symbol,

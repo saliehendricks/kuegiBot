@@ -105,7 +105,7 @@ class BitmexInterface(ExchangeInterface):
                             break
 
         if self.on_tick_callback is not None and table in ["tradeBin1h", "order", "execution"]:
-            self.on_tick_callback()
+            self.on_tick_callback(fromAccountAction=table in ["order", "execution"])
 
     def get_bars(self,timeframe_minutes,start_offset_minutes)->List[Bar]:
         return process_low_tf_bars(self.h1Bars, timeframe_minutes, start_offset_minutes=start_offset_minutes)

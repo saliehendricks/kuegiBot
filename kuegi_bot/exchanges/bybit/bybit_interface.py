@@ -185,7 +185,7 @@ class ByBitInterface(ExchangeInterface):
             if topic in ["order", "stop_order","execution"]:
                 gotTick = True
             if gotTick and self.on_tick_callback is not None:
-                self.on_tick_callback()  # got something new
+                self.on_tick_callback(fromAccountAction= topic in ["order", "stop_order","execution"])  # got something new
         except Exception as e:
             self.logger.error("error in socket data(%s): %s " % (topic, str(e)))
 
