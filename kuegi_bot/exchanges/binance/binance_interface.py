@@ -155,7 +155,7 @@ class BinanceInterface(ExchangeInterface):
 
     def error(self, e: BinanceApiException):
         self.logger.error(e.error_code +": "+ e.error_message)
-        self.exit()
+        self.open= False
 
     def initOrders(self):
         apiOrders = self.client.get_open_orders()
