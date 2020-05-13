@@ -20,7 +20,6 @@ class LiveTrading(OrderInterface):
         self.settings = settings
         self.id = self.settings.id
         self.last_tick= 0
-        self.tick_delay= 0
 
         self.logger = log.setup_custom_logger(name=settings.id,
                                               log_level=settings.LOG_LEVEL,
@@ -56,10 +55,10 @@ class LiveTrading(OrderInterface):
 
     def on_tick(self,fromAccountAction:bool=True):
         if fromAccountAction:
-            self.tick_delay= 2000
+            delay= 2
         else:
-            self.tick_delay= 0
-        self.last_tick= time.time()
+            delay= 0
+        self.last_tick= max(self.last_tick,time.time() + delay)
         self.logger.info("got tick "+str(fromAccountAction))
 
     def print_status(self):
@@ -189,7 +188,7 @@ class LiveTrading(OrderInterface):
             # execute if last execution is to long ago
             # or there was a tick since the last execution but the tick is more than debounce ms ago (to prevent race condition of account updates etc.)
             if current - last > self.settings.LOOP_INTERVAL or \
-                    (last < self.last_tick < current - self.tick_delay/1000):
+                    (last < self.last_tick < current):
                 last= time.time()
                 if not self.check_connection():
                     self.logger.error("Realtime data connection unexpectedly closed, exiting.")

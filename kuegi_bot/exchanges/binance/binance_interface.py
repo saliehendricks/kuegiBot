@@ -24,8 +24,11 @@ class BinanceInterface(ExchangeInterface):
         self.ws = SubscriptionClient(api_key=settings.API_KEY,
                                      secret_key=settings.API_SECRET)
 
+        # for binance the key is the internal id (not the exchange id) cause we can't update order but have to cancel and reopen with same id.
+        # that leads to different exchange id, but we need to know its the same.
         self.orders = {}
         self.positions = {}
+        self.symbol_object : Symbol = None
         self.candles: List[Candlestick] = []
         self.last = 0
         self.open = False
@@ -37,6 +40,7 @@ class BinanceInterface(ExchangeInterface):
         self.logger.info("loading market data. this may take a moment")
         self.initOrders()
         self.initPositions()
+        self.symbol_object= self.get_instrument()
         self.logger.info("got all data. subscribing to live updates.")
         self.listen_key = self.client.start_user_data_stream()
         self.lastUserDataKeep = time.time()
@@ -51,7 +55,7 @@ class BinanceInterface(ExchangeInterface):
         gotTick = False
         fromAccount= False
         # refresh userdata every 15 min
-        if self.lastUserDataKeep < time.time() - 15 * 60:
+        if self.lastUserDataKeep < time.time() - 5 * 60:
             self.lastUserDataKeep = time.time()
             self.client.keep_user_data_stream()
 
@@ -114,19 +118,20 @@ class BinanceInterface(ExchangeInterface):
                 fromAccount= True
                 sideMulti = 1 if event.side == 'BUY' else -1
                 order: Order = Order(orderId=event.clientOrderId,
-                                     stop=event.stopPrice,
-                                     limit=event.price,
+                                     stop=event.stopPrice if event.stopPrice > 0 else None,
+                                     limit=event.price if event.price > 0 else None,
                                      amount=event.origQty * sideMulti
                                      )
                 order.exchange_id = event.orderId
-                # FIXME: how do i know stop triggered on binance?
-                # order.stop_triggered =
+                # trigger of a stoplimit in Binance means "update for order -> expired" then "update -> as limit"
+                order.stop_triggered = event.type == "LIMIT" and event.stopPrice > 0
                 order.executed_amount = event.cumulativeFilledQty * sideMulti
                 order.executed_price = event.avgPrice
                 order.tstamp = event.transactionTime
                 order.execution_tstamp = event.orderTradeTime
+                order.active = event.orderStatus in ["NEW", "PARTIALLY_FILLED"]
 
-                prev: Order = self.orders[order.exchange_id] if order.exchange_id in self.orders.keys() else None
+                prev: Order = self.orders[order.id] if order.id in self.orders.keys() else None
                 if prev is not None:
                     if prev.tstamp > order.tstamp or abs(prev.executed_amount) > abs(order.executed_amount):
                         # already got newer information, probably the info of the stop order getting
@@ -139,7 +144,7 @@ class BinanceInterface(ExchangeInterface):
                 prev = order
                 if not prev.active and prev.execution_tstamp == 0:
                     prev.execution_tstamp = datetime.utcnow().timestamp()
-                self.orders[order.exchange_id] = prev
+                self.orders[order.id] = prev
 
                 self.logger.info("received order update: %s" % (str(order)))
         else:
@@ -148,24 +153,24 @@ class BinanceInterface(ExchangeInterface):
         if gotTick and self.on_tick_callback is not None:
             self.on_tick_callback(fromAccountAction=fromAccount)  # got something new
 
-    def error(self, e: 'BinanceApiException'):
+    def error(self, e: BinanceApiException):
+        self.logger.error(e.error_code +": "+ e.error_message)
         self.exit()
-        self.logger.error(e.error_code + e.error_message)
 
     def initOrders(self):
         apiOrders = self.client.get_open_orders()
         for o in apiOrders:
             order = self.convertOrder(o)
             if order.active:
-                self.orders[order.exchange_id] = order
+                self.orders[order.id] = order
 
     @staticmethod
     def convertOrder(apiOrder: binance_f.model.Order) -> Order:
         direction = 1 if apiOrder.side == OrderSide.BUY else -1
         order = Order(orderId=apiOrder.clientOrderId,
                       amount=apiOrder.origQty * direction,
-                      limit=apiOrder.price,
-                      stop=apiOrder.stopPrice)
+                      limit=apiOrder.price if apiOrder.price > 0 else None,
+                      stop=apiOrder.stopPrice if apiOrder.stopPrice > 0 else None)
         order.executed_amount = apiOrder.executedQty * direction
         order.executed_price = apiOrder.avgPrice
         order.active = apiOrder.status in ["NEW", "PARTIALLY_FILLED"]
@@ -196,30 +201,37 @@ class BinanceInterface(ExchangeInterface):
                                                                    self.positions[self.symbol].avgEntryPrice))
 
     def exit(self):
-        self.ws.unsubscribe_all()
         self.open = False
+        self.ws.unsubscribe_all()
 
     def internal_cancel_order(self, order: Order):
-        if order.exchange_id in self.orders.keys():
-            self.orders[order.exchange_id].active = False
+        if order.id in self.orders.keys():
+            self.orders[order.id].active = False
         self.client.cancel_order(symbol=self.symbol, origClientOrderId=order.id)
 
     def internal_send_order(self, order: Order):
         if order.limit_price is not None:
+            order.limit_price= round(order.limit_price,self.symbol_object.pricePrecision)
             if order.stop_price is not None:
+                order.stop_price= round(order.stop_price,self.symbol_object.pricePrecision)
                 order_type = OrderType.STOP
             else:
                 order_type = OrderType.LIMIT
-        else:
+        elif order.stop_price is not None:
+            order.stop_price= round(order.stop_price,self.symbol_object.pricePrecision)
             order_type = OrderType.STOP_MARKET
+        else:
+            order_type = OrderType.MARKET
 
+        order.amount= round(order.amount,self.symbol_object.quantityPrecision)
         resultOrder: binance_f.model.Order = self.client.post_order(
                                                             symbol=self.symbol,
                                                             side=OrderSide.BUY if order.amount > 0 else OrderSide.SELL,
                                                             ordertype=order_type,
-                                                            timeInForce=TimeInForce.GTC,
+                                                            timeInForce=TimeInForce.GTC if order_type in [OrderType.LIMIT, OrderType.STOP] else None,
                                                             quantity=abs(order.amount),
-                                                            price=order.limit_price, stopPrice=order.stop_price,
+                                                            price=order.limit_price,
+                                                            stopPrice=order.stop_price,
                                                             newClientOrderId=order.id)
         order.exchange_id = resultOrder.orderId
 
@@ -283,7 +295,9 @@ class BinanceInterface(ExchangeInterface):
                               lotSize=lotSize,
                               tickSize=tickSize,
                               makerFee=0.02,
-                              takerFee=0.04)
+                              takerFee=0.04,
+                              pricePrecision= symb.pricePrecision,
+                              quantityPrecision=symb.quantityPrecision)
         return None
 
     def get_position(self, symbol=None):

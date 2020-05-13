@@ -22,6 +22,7 @@ from kuegi_bot.utils.helper import load_settings_from_args
 
 def start_bot(botSettings):
     bot = MultiStrategyBot()
+    originalSettings= dotdict(dict(botSettings))
     if "strategies" in botSettings.keys():
         strategies = dict(botSettings.strategies)
         del botSettings.strategies  # settings is now just the meta settings
@@ -123,6 +124,7 @@ def start_bot(botSettings):
     live = LiveTrading(settings=botSettings, trading_bot=bot)
     t = threading.Thread(target=live.run_loop)
     t.bot: LiveTrading = live
+    t.originalSettings= originalSettings
     t.start()
     return t
 
@@ -198,7 +200,7 @@ def run(settings):
             for thread in activeThreads:
                 if not thread.is_alive() or not thread.bot.alive:
                     logger.info("%s died. stopping" % thread.bot.id)
-                    toRestart.append(thread.bot.settings)
+                    toRestart.append(thread.originalSettings)
                     thread.bot.exit()
                     toRemove.append(thread)
                     failures = failures + 1

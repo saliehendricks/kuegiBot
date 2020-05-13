@@ -75,13 +75,15 @@ class Account:
 
 
 class Symbol:
-    def __init__(self, symbol: str, isInverse, lotSize, tickSize, makerFee, takerFee):
+    def __init__(self, symbol: str, isInverse, lotSize, tickSize, makerFee, takerFee,pricePrecision = 2, quantityPrecision= 4):
         self.symbol: str = symbol
         self.isInverse = isInverse
         self.lotSize = lotSize
         self.tickSize = tickSize
         self.makerFee = makerFee
         self.takerFee = takerFee
+        self.pricePrecision= pricePrecision
+        self.quantityPrecision= quantityPrecision
 
     def __str__(self):
         return str(self.__dict__)
@@ -111,12 +113,17 @@ class Order:
         return str(self.__dict__)
 
     def print_info(self):
+        precision= 1
+        if abs(self.amount) < 1:
+            precision= 3
+        format= "{:."+str(precision)+"f}"
+        amount= format.format(self.amount)
         if self.limit_price is None and self.stop_price is None:
-            return "%s %.1f @ market" % (self.id, self.amount)
+            return "%s %s @ market" % (self.id, amount)
         else:
-            return "%s %.1f @ %.1f" % (
+            return "%s %s @ %.1f" % (
                 self.id,
-                self.amount,
+                amount,
                 self.limit_price if self.limit_price is not None else self.stop_price)
 
 
