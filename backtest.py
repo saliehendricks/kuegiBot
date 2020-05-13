@@ -91,9 +91,14 @@ bars_n = load_bars(30 * 12, 240,0,'binance')
 
 #runOpti(bars_m,[1],[63],[1])
 
-#checkDayFilterByDay(bars_m)
-
 '''
+checkDayFilterByDay(bars_n,
+    symbol=Symbol(symbol="BTCUSDT", isInverse=False, tickSize=0.001, lotSize=0.00001, makerFee=0.02,
+                                     takerFee=0.04))
+
+#'''
+
+#'''
 runOpti(bars_n,
         min=   [6,0.2,5,50,25,-0.5],
         max=   [16,0.8,15,90,45,0.5],
