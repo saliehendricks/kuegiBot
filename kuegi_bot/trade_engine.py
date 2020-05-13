@@ -25,6 +25,8 @@ class LiveTrading(OrderInterface):
                                               log_level=settings.LOG_LEVEL,
                                               logToConsole=settings.LOG_TO_CONSOLE,
                                               logToFile=settings.LOG_TO_FILE)
+        self.logger.info("#############################")
+        self.logger.info("############ Start LiveTrading "+settings.id+" on "+settings.EXCHANGE+" #################")
         self.exchange: ExchangeInterface = None
         if settings.EXCHANGE == 'bitmex':
             self.exchange = BitmexInterface(settings=settings, logger=self.logger,on_tick_callback=self.on_tick)
@@ -40,7 +42,7 @@ class LiveTrading(OrderInterface):
         self.alive = True
 
         if self.exchange.is_open():
-            self.logger.info("############# Starting Live Trading Engine for %s ##############" % self.exchange.symbol)
+            self.logger.info(" Starting Live Trading Engine for %s " % self.exchange.symbol)
             self.symbolInfo: Symbol = self.exchange.get_instrument()
             self.bot: TradingBot = trading_bot
             self.bot.prepare(self.logger,self)

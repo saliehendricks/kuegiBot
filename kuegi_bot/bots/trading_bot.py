@@ -240,7 +240,7 @@ class TradingBot:
                 open_pos - account.open_position.quantity) < 0.1:
             return
 
-        self.logger.info("Has to start order/pos sync with bot vs acc: %.1f vs. %.1f and %i vs %i, remaining: %i,  %i"
+        self.logger.info("Has to start order/pos sync with bot vs acc: %.3f vs. %.3f and %i vs %i, remaining: %i,  %i"
                          % (
                              open_pos, account.open_position.quantity, len(self.open_positions),
                              len(account.open_orders),
