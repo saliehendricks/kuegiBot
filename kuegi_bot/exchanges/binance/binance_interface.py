@@ -128,7 +128,7 @@ class BinanceInterface(ExchangeInterface):
                 order.executed_amount = event.cumulativeFilledQty * sideMulti
                 order.executed_price = event.avgPrice
                 order.tstamp = event.transactionTime
-                order.execution_tstamp = event.orderTradeTime
+                order.execution_tstamp = event.orderTradeTime/1000
                 order.active = event.orderStatus in ["NEW", "PARTIALLY_FILLED"]
 
                 prev: Order = self.orders[order.id] if order.id in self.orders.keys() else None
