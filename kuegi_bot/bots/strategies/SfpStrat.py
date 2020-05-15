@@ -136,7 +136,7 @@ class SfpStrategy(ChannelStrategy):
 
             entry = bars[0].open
             amount = self.calc_pos_size(risk=risk, exitPrice=stop * (1 + expectedExitSlipagePerc),
-                                        entry=entry * (1 - expectedEntrySplipagePerc), data=data)
+                                        entry=entry * (1 - expectedEntrySplipagePerc), atr=data.atr)
 
             posId = TradingBot.full_pos_id(signalId, PositionDirection.SHORT)
             pos = Position(id=posId, entry=entry, amount=amount, stop=stop,
@@ -173,7 +173,7 @@ class SfpStrategy(ChannelStrategy):
 
             entry = bars[0].open
             amount = self.calc_pos_size(risk=risk, exitPrice=stop * (1 - expectedExitSlipagePerc),
-                                        entry=entry * (1 + expectedEntrySplipagePerc), data=data)
+                                        entry=entry * (1 + expectedEntrySplipagePerc), atr=data.atr)
 
             posId = TradingBot.full_pos_id(signalId, PositionDirection.LONG)
             pos = Position(id=posId, entry=entry, amount=amount, stop=stop,

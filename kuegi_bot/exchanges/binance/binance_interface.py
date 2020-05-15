@@ -224,20 +224,27 @@ class BinanceInterface(ExchangeInterface):
             order_type = OrderType.MARKET
 
         order.amount= round(order.amount,self.symbol_object.quantityPrecision)
+        quantityFormat= "{:."+str(self.symbol_object.quantityPrecision)+"f}"
+        priceFormat= "{:."+str(self.symbol_object.pricePrecision)+"f}"
+        # yes have to send the price and quantity in as str (although it wants float) cause otherwise it converts it inernally
+        # and that sometimes fuck up the precision (0.023 -> 0.02299999999)
         resultOrder: binance_f.model.Order = self.client.post_order(
                                                             symbol=self.symbol,
                                                             side=OrderSide.BUY if order.amount > 0 else OrderSide.SELL,
                                                             ordertype=order_type,
                                                             timeInForce=TimeInForce.GTC if order_type in [OrderType.LIMIT, OrderType.STOP] else None,
-                                                            quantity=abs(order.amount),
-                                                            price=order.limit_price,
-                                                            stopPrice=order.stop_price,
+                                                            quantity=quantityFormat.format(abs(order.amount)),
+                                                            price=priceFormat.format(order.limit_price) if order.limit_price is not None else None,
+                                                            stopPrice=priceFormat.format(order.stop_price) if order.stop_price is not None else None,
                                                             newClientOrderId=order.id)
         order.exchange_id = resultOrder.orderId
 
     def internal_update_order(self, order: Order):
         self.cancel_order(order)  # stupid binance can't update orders
+        self.on_tick_callback(True)  # triggers a reset of the tick-delay.
+        # otherwise we risk a tick to be calced after the cancel, before the new order
         self.send_order(order)
+        self.on_tick_callback(True)  # triggers a reset of the tick-delay
 
     def get_orders(self) -> List[Order]:
         return list(self.orders.values())

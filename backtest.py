@@ -98,7 +98,7 @@ checkDayFilterByDay(bars_n,
 
 #'''
 
-#'''
+'''
 runOpti(bars_n,
         min=   [6,0.2,5,50,25,-0.5],
         max=   [16,0.8,15,90,45,0.5],

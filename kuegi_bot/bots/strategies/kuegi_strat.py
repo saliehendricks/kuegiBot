@@ -145,10 +145,10 @@ class KuegiStrategy(ChannelStrategy):
                 # first check if we should update an existing one
                 longAmount = self.calc_pos_size(risk=risk, exitPrice=stopLong * (1 - expectedExitSlipagePerc),
                                                 entry=longEntry * (1 + expectedEntrySplipagePerc),
-                                                data=data)
+                                                atr=data.atr)
                 shortAmount = self.calc_pos_size(risk=risk, exitPrice=stopShort * (1 + expectedExitSlipagePerc),
                                                  entry=shortEntry * (1 - expectedEntrySplipagePerc),
-                                                 data=data)
+                                                 atr=data.atr)
                 if longEntry < stopLong or shortEntry > stopShort:
                     self.logger.warn("can't put initial stop above entry")
 
@@ -176,7 +176,7 @@ class KuegiStrategy(ChannelStrategy):
                                 newStop = int(
                                     position.initial_stop * (1 - self.entry_tightening) + stop * self.entry_tightening)
                                 amount = self.calc_pos_size(risk=risk, exitPrice=newStop * exitFac,
-                                                            entry=newEntry * entryFac, data=data)
+                                                            entry=newEntry * entryFac, atr=data.atr)
                                 if amount * order.amount < 0:
                                     self.logger.warn("updating order switching direction")
                                 changed = False

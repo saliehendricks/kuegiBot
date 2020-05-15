@@ -14,10 +14,6 @@ class ChannelStrategy(StrategyWithExitModulesAndFilter):
     def __init__(self):
         super().__init__()
         self.channel: KuegiChannel = None
-        self.risk_factor = 1
-        self.risk_type = 0  # 0= all equal, 1= 1 atr eq 1 R
-        self.atr_factor_risk= 1
-        self.max_risk_mul = 1
         self.trail_to_swing = False
         self.delayed_swing_trail = True
         self.trail_back = False
@@ -25,13 +21,6 @@ class ChannelStrategy(StrategyWithExitModulesAndFilter):
 
     def myId(self):
         return "ChannelStrategy"
-
-    def withRM(self, risk_factor: float = 0.01, max_risk_mul: float = 2, risk_type: int = 0, atr_factor: float = 1):
-        self.risk_factor = risk_factor
-        self.risk_type = risk_type  # 0= all equal, 1= 1 atr eq 1 R
-        self.max_risk_mul = max_risk_mul
-        self.atr_factor_risk= atr_factor
-        return self
 
     def withChannel(self, max_look_back, threshold_factor, buffer_factor, max_dist_factor, max_swing_length):
         self.channel = KuegiChannel(max_look_back, threshold_factor, buffer_factor, max_dist_factor, max_swing_length)
@@ -120,18 +109,3 @@ class ChannelStrategy(StrategyWithExitModulesAndFilter):
             fig.add_scatter(x=time, y=sub_data[offset:], mode='lines', line=styles[idx],
                             name=self.channel.id + "_" + names[idx])
 
-    ####################################
-
-    def calc_pos_size(self, risk, entry, exitPrice, data: Data):
-        if self.risk_type <= 2:
-            delta = entry - exitPrice
-            if self.risk_type == 1:
-                # use atr as delta reference, but max X the actual delta. so risk is never more than X times the
-                # wanted risk
-                delta = math.copysign(max(abs(delta)/self.max_risk_mul, data.atr*self.atr_factor_risk), delta)
-
-            if not self.symbol.isInverse:
-                size = risk / delta
-            else:
-                size = -int(risk / (1 / entry - 1 / (entry - delta)))
-            return size

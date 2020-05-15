@@ -1,3 +1,4 @@
+import math
 from functools import reduce
 
 import plotly.graph_objects as go
@@ -11,6 +12,10 @@ class Strategy:
         self.logger = None
         self.order_interface = None
         self.symbol = None
+        self.risk_factor = 1
+        self.risk_type = 0  # 0= all equal, 1= 1 atr eq 1 R
+        self.atr_factor_risk= 1
+        self.max_risk_mul = 1
 
     def myId(self):
         return "GenericStrategy"
@@ -52,6 +57,27 @@ class Strategy:
     def add_to_plot(self, fig: go.Figure, bars: List[Bar], time):
         pass
 
+    def withRM(self, risk_factor: float = 0.01, max_risk_mul: float = 2, risk_type: int = 0, atr_factor: float = 1):
+        self.risk_factor = risk_factor
+        self.risk_type = risk_type  # 0= all equal, 1= 1 atr eq 1 R
+        self.max_risk_mul = max_risk_mul
+        self.atr_factor_risk= atr_factor
+        return self
+
+    def calc_pos_size(self, risk, entry, exitPrice, atr:float):
+        if self.risk_type <= 2:
+            delta = entry - exitPrice
+            if self.risk_type == 1:
+                # use atr as delta reference, but max X the actual delta. so risk is never more than X times the
+                # wanted risk
+                delta = math.copysign(max(abs(delta)/self.max_risk_mul, atr*self.atr_factor_risk), delta)
+
+            if not self.symbol.isInverse:
+                size = risk / delta
+            else:
+                size = -int(risk / (1 / entry - 1 / (entry - delta)))
+            size = round(size,self.symbol.quantityPrecision)
+            return size
 
 class MultiStrategyBot(TradingBot):
 

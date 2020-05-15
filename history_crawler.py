@@ -35,7 +35,7 @@ offset = 0
 # TODO: adapt this to your number if you already have history files
 filecount = {
     "bitmex": 45,
-    "bybit": 14,
+    "bybit": 15,
     "binance": 6,
     "binanceSpot": 28
 }

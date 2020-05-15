@@ -75,7 +75,7 @@ class Account:
 
 
 class Symbol:
-    def __init__(self, symbol: str, isInverse, lotSize, tickSize, makerFee, takerFee,pricePrecision = 2, quantityPrecision= 4):
+    def __init__(self, symbol: str, isInverse, lotSize, tickSize, makerFee, takerFee,pricePrecision = 2, quantityPrecision= 2):
         self.symbol: str = symbol
         self.isInverse = isInverse
         self.lotSize = lotSize
