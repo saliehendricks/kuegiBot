@@ -139,6 +139,18 @@ class TradingBot:
 
     ############### handling of open orders
 
+    def check_open_orders_in_position(self,position:Position):
+        gotSL= False
+        for order in position.connectedOrders:
+            if self.order_type_from_order_id(order.id) == OrderType.SL:
+                if gotSL:
+                    # double SL: cancel
+                    self.order_interface.cancel_order(order)
+                else:
+                    gotSL= True
+        # TODO: move handling of missing SL to here
+
+
     def cancel_entry(self, positionId, account: Account):
         to_cancel = self.generate_order_id(positionId, OrderType.ENTRY)
         for o in account.open_orders:
@@ -204,6 +216,7 @@ class TradingBot:
     def sync_positions_with_open_orders(self, bars: List[Bar], account: Account):
         open_pos = 0
         for pos in self.open_positions.values():
+            pos.connectedOrders= [] # will be filled now
             if pos.status == PositionStatus.OPEN:
                 open_pos += pos.amount
 
@@ -227,14 +240,18 @@ class TradingBot:
                 continue  # none of ours
             posId = self.position_id_from_order_id(order.id)
             if posId in self.open_positions.keys():
+                pos = self.open_positions[posId]
+                pos.connectedOrders.append(order)
                 remaining_orders.remove(order)
                 if posId in remaining_pos_ids:
-                    pos = self.open_positions[posId]
                     if (orderType == OrderType.SL and pos.status == PositionStatus.OPEN) \
                             or (orderType == OrderType.ENTRY and pos.status == PositionStatus.PENDING):
                         # only remove from remaining if its open with SL or pending with entry. every position needs
                         # a stoploss!
                         remaining_pos_ids.remove(posId)
+
+        for pos in self.open_positions.values():
+            self.check_open_orders_in_position(pos)
 
         if len(remaining_orders) == 0 and len(remaining_pos_ids) == 0 and abs(
                 open_pos - account.open_position.quantity) < 0.1:

@@ -159,6 +159,7 @@ class Position:
         self.entry_tstamp = 0
         self.exit_tstamp = 0
         self.exit_equity = 0
+        self.connectedOrders :List[Order] = []
         self.stats = {}
 
     def __str__(self):
