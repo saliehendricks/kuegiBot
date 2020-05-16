@@ -307,15 +307,18 @@ class BitMEX(object):
         """Place an order."""
 
         endpoint = "order"
+        execInst= None
         type= 'Limit'
         if order.limit_price is not None:
             if order.stop_price is not None:
                 type = 'StopLimit'
+                execInst= "LastPrice"
             else:
                 type= 'Limit'
         else:
             if order.stop_price is not None:
                 type = 'Stop'
+                execInst= "LastPrice"
             else:
                 type= 'Market'
 
@@ -324,7 +327,7 @@ class BitMEX(object):
             'orderQty': order.amount,
             'price': order.limit_price,
             'stopPx': order.stop_price,
-            'execInst': 'LastPrice',
+            'execInst': execInst,
             'clOrdID': order.id,
             'ordType': type
         }
