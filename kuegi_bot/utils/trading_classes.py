@@ -168,6 +168,7 @@ class Position:
     def to_json(self):
         tempdic = dict(self.__dict__)
         tempdic['status'] = self.status.value
+        tempdic['connectedOrders']= None
         return tempdic
 
     @staticmethod

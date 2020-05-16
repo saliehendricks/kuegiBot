@@ -214,6 +214,7 @@ def run(settings):
 
             for usedSettings in toRestart:
                 logger.info("restarting " + usedSettings.id)
+                sleep(10)
                 activeThreads.append(start_bot(usedSettings))
 
             write_dashboard(settings.DASHBOARD_FILE)

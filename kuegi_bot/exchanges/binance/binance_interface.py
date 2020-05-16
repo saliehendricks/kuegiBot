@@ -203,6 +203,7 @@ class BinanceInterface(ExchangeInterface):
     def exit(self):
         self.open = False
         self.ws.unsubscribe_all()
+        self.client.close_user_data_stream()
 
     def internal_cancel_order(self, order: Order):
         if order.id in self.orders.keys():
