@@ -34,6 +34,7 @@ class BinanceInterface(ExchangeInterface):
         self.open = False
         self.listen_key = ""
         self.lastUserDataKeep = None
+        self.wantedResponses= 0 # needed to wait for realtime
         self.init()
 
     def init(self):
@@ -44,23 +45,32 @@ class BinanceInterface(ExchangeInterface):
         self.logger.info("got all data. subscribing to live updates.")
         self.listen_key = self.client.start_user_data_stream()
         self.lastUserDataKeep = time.time()
-
+        self.wantedResponses= 2
         subInt = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
         self.ws.subscribe_candlestick_event(self.symbol.lower(), subInt, self.callback, self.error)
         self.ws.subscribe_user_data_event(self.listen_key, self.callback, self.error)
+        waitingTime = 0
+        while self.wantedResponses > 0 and waitingTime < 100:
+            waitingTime += 1
+            time.sleep(0.1)
+
+        if self.wantedResponses > 0:
+            self.logger.error("got no response to subscription. outa here")
+            self.open= False
+            return
         self.open = True
         self.logger.info("ready to go")
 
     def callback(self, data_type: 'SubscribeMessageType', event: 'any'):
         gotTick = False
         fromAccount= False
-        # refresh userdata every 15 min
+        # refresh userdata every 5 min
         if self.lastUserDataKeep < time.time() - 5 * 60:
             self.lastUserDataKeep = time.time()
             self.client.keep_user_data_stream()
 
         if data_type == SubscribeMessageType.RESPONSE:
-            pass  # what to do herE?
+            self.wantedResponses -= 1  # tell the waiting init that we got it. otherwise we might be too fast
         elif data_type == SubscribeMessageType.PAYLOAD:
             if event.eventType == "kline":
                 # {'eventType': 'kline', 'eventTime': 1587064627164, 'symbol': 'BTCUSDT',
