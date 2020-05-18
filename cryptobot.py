@@ -4,7 +4,7 @@ import os
 import signal
 import sys
 import threading
-from time import sleep
+from time import sleep, time
 from typing import List
 
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
@@ -192,9 +192,9 @@ def run(settings):
 
     if len(activeThreads) > 0:
         failures= 0
+        lastError= 0
         while True:
             sleep(1)
-            allActive = True
             toRestart= []
             toRemove= []
             for thread in activeThreads:
@@ -204,9 +204,11 @@ def run(settings):
                     thread.bot.exit()
                     toRemove.append(thread)
                     failures = failures + 1
+                    lastError= time()
             for thread in toRemove:
                 activeThreads.remove(thread)
-
+            if time() - lastError > 60*15:
+                failures= 0 # reset errorCount after 15 minutes. only restart if more than 5 errors in 15 min
             if failures > 5:
                 logger.info("too many failures, restart the whole thing")
                 stop_all_and_exit()
