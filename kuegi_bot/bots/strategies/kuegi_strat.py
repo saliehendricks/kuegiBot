@@ -4,7 +4,7 @@ from typing import List
 
 from kuegi_bot.bots.strategies.channel_strat import ChannelStrategy
 from kuegi_bot.bots.trading_bot import TradingBot, PositionDirection
-from kuegi_bot.kuegi_channel import Data, clean_range
+from kuegi_bot.indicators.kuegi_channel import Data, clean_range
 from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position, Order, PositionStatus
 
 

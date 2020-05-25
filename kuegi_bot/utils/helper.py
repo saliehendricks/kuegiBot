@@ -6,7 +6,7 @@ from typing import List
 
 from kuegi_bot.exchanges.binance.binance_interface import BinanceInterface
 from kuegi_bot.exchanges.bybit.bybit_interface import ByBitInterface
-from kuegi_bot.indicator import Indicator
+from kuegi_bot.indicators.indicator import Indicator
 from kuegi_bot.exchanges.bitmex.bitmex_interface import BitmexInterface
 from kuegi_bot.utils import log
 

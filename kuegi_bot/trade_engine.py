@@ -167,6 +167,7 @@ class LiveTrading(OrderInterface):
             self.logger.info("Was not authenticated; could not cancel orders.")
         except Exception as e:
             self.logger.info("Unable to exit exchange: %s" % e)
+            traceback.print_exc()
         self.alive = False
 
     def handle_tick(self):

@@ -2,10 +2,9 @@ from typing import List
 import math
 import plotly.graph_objects as go
 
-from kuegi_bot.bots.MultiStrategyBot import Strategy
 from kuegi_bot.bots.strategies.strat_with_exit_modules import StrategyWithExitModulesAndFilter
 from kuegi_bot.bots.trading_bot import TradingBot
-from kuegi_bot.kuegi_channel import KuegiChannel, Data
+from kuegi_bot.indicators.kuegi_channel import KuegiChannel, Data
 from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType
 
 

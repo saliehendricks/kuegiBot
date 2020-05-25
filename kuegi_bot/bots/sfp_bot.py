@@ -1,10 +1,9 @@
-import math
 from datetime import datetime
 from typing import List
 
 from kuegi_bot.bots.bot_with_channel import BotWithChannel
 from kuegi_bot.bots.trading_bot import PositionDirection
-from kuegi_bot.kuegi_channel import Data, clean_range
+from kuegi_bot.indicators.kuegi_channel import Data, clean_range
 from kuegi_bot.utils.trading_classes import Position, Order, Account, Bar, OrderType, PositionStatus
 
 

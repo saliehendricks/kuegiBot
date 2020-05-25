@@ -6,6 +6,7 @@ import math
 from typing import List
 
 from kuegi_bot.bots.strategies.strat_with_exit_modules import ExitModule
+from kuegi_bot.indicators.indicator import Indicator, clean_range
 from kuegi_bot.utils.trading_classes import Position, Bar
 
 
@@ -14,24 +15,35 @@ class SimpleBE(ExitModule):
         "break even" includes a buffer (multiple of the entry-risk).
     '''
 
-    def __init__(self, factor, buffer):
+    def __init__(self, factor, buffer, atrPeriod: int = 0):
         super().__init__()
         self.factor = factor
         self.buffer = buffer
+        self.atrPeriod = atrPeriod
 
     def init(self, logger):
         super().init(logger)
-        self.logger.info("init BE %.1f %.1f" % (self.factor, self.buffer))
+        self.logger.info("init BE %.1f %.1f %i" % (self.factor, self.buffer, self.atrPeriod))
 
     def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
-        if position is not None:
+        if position is not None and self.factor > 0:
             # trail
             newStop = order.stop_price
-            if self.factor > 0 and position.wanted_entry is not None and position.initial_stop is not None:
-                entry_diff = (position.wanted_entry - position.initial_stop)
+            refRange = 0
+            if self.atrPeriod > 0:
+                atrId = "ATR" + str(self.atrPeriod)
+                refRange = Indicator.get_data_static(bars[1], atrId)
+                if refRange is None:
+                    refRange = clean_range(bars, offset=1, length=self.atrPeriod)
+                    Indicator.write_data_static(bars[1], refRange, atrId)
+
+            elif position.wanted_entry is not None and position.initial_stop is not None:
+                refRange = (position.wanted_entry - position.initial_stop)
+
+            if refRange != 0:
                 ep = bars[0].high if position.amount > 0 else bars[0].low
-                be = position.wanted_entry + entry_diff * self.buffer
-                if (ep - (position.wanted_entry + entry_diff * self.factor)) * position.amount > 0 \
+                be = position.wanted_entry + refRange * self.buffer
+                if (ep - (position.wanted_entry + refRange * self.factor)) * position.amount > 0 \
                         and (be - newStop) * position.amount > 0:
                     newStop = math.floor(be) if position.amount < 0 else math.ceil(be)
 

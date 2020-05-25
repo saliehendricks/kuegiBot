@@ -1,26 +1,10 @@
-from functools import reduce
 from typing import List
 
-from kuegi_bot.indicator import Indicator, get_bar_value, highest, lowest, BarSeries
+from kuegi_bot.indicators.indicator import Indicator, get_bar_value, highest, lowest, BarSeries, clean_range
 from kuegi_bot.trade_engine import Bar
 from kuegi_bot.utils import log
 
 logger = log.setup_custom_logger()
-
-
-def clean_range(bars: List[Bar], offset: int, length: int):
-    ranges = []
-    for idx in range(offset, offset + length):
-        if idx < len(bars):
-            ranges.append(bars[idx].high - bars[idx].low)
-
-    ranges.sort(reverse=True)
-
-    # ignore the biggest 10% of ranges
-    ignored_count = int(length / 5)
-    sum = reduce(lambda x1, x2: x1 + x2, ranges[ignored_count:])
-    return sum / (len(ranges) - ignored_count)
-
 
 class Data:
     def __init__(self, sinceLongReset, sinceShortReset, longTrail, shortTrail, longSwing, shortSwing, buffer, atr):

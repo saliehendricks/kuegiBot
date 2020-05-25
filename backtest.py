@@ -3,15 +3,12 @@ import random
 from kuegi_bot.backtest_engine import BackTest
 from kuegi_bot.bots.MultiStrategyBot import MultiStrategyBot
 from kuegi_bot.bots.strategies.entry_filters import DayOfWeekFilter
-from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
+from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
 from kuegi_bot.utils.helper import load_bars, prepare_plot
 from kuegi_bot.utils import log
-from kuegi_bot.kuegi_channel import KuegiChannel
-from kuegi_bot.bots.kuegi_bot import KuegiBot
-from kuegi_bot.bots.sfp_bot import SfpBot
-from kuegi_bot.utils.trading_classes import Symbol
+from kuegi_bot.indicators.kuegi_channel import KuegiChannel
 
 logger = log.setup_custom_logger()
 

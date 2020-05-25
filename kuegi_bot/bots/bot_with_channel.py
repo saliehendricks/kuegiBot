@@ -3,7 +3,7 @@ import math
 import plotly.graph_objects as go
 
 from kuegi_bot.bots.trading_bot import TradingBot
-from kuegi_bot.kuegi_channel import KuegiChannel, Data
+from kuegi_bot.indicators.kuegi_channel import KuegiChannel, Data
 from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Position
 
 
