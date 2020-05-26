@@ -4,6 +4,7 @@ import os
 import signal
 import sys
 import threading
+import traceback
 from time import sleep, time
 from typing import List
 
@@ -145,24 +146,30 @@ def term_handler(signum, frame):
 
 
 def write_dashboard(dashboardFile):
+    result = {}
+    for thread in activeThreads:
+        try:
+            bot: LiveTrading = thread.bot
+            if bot.alive:
+                result[bot.id] = {
+                    'alive': bot.alive,
+                    "last_time": bot.bot.last_time,
+                    "last_tick": str(bot.bot.last_tick_time)}
+                data = result[bot.id]
+                data['positions'] = []
+                for pos in bot.bot.open_positions:
+                    data['positions'].append(bot.bot.open_positions[pos].to_json())
+            else:
+                result[bot.id] = {"alive": False}
+        except Exception as e:
+            logger.error("exception in writing dashboard: " + traceback.format_exc())
+            thread.bot.alive= False
+
     try:
         os.makedirs(os.path.dirname(dashboardFile))
     except Exception:
         pass
     with open(dashboardFile, 'w') as file:
-        result = {}
-
-        for thread in activeThreads:
-            bot:LiveTrading= thread.bot
-            result[bot.id]={
-                'alive': bot.alive,
-                "last_time": bot.bot.last_time,
-                "last_tick": str(bot.bot.last_tick_time)}
-            data= result[bot.id]
-            data['positions'] = []
-
-            for pos in bot.bot.open_positions:
-                data['positions'].append(bot.bot.open_positions[pos].to_json())
         json.dump(result, file, sort_keys=False, indent=4)
 
 def run(settings):
@@ -194,33 +201,35 @@ def run(settings):
         failures= 0
         lastError= 0
         while True:
-            sleep(1)
-            toRestart= []
-            toRemove= []
-            for thread in activeThreads:
-                if not thread.is_alive() or not thread.bot.alive:
-                    logger.info("%s died. stopping" % thread.bot.id)
-                    toRestart.append(thread.originalSettings)
-                    thread.bot.exit()
-                    toRemove.append(thread)
-                    failures = failures + 1
-                    lastError= time()
-            for thread in toRemove:
-                activeThreads.remove(thread)
-            if time() - lastError > 60*15:
-                failures= 0 # reset errorCount after 15 minutes. only restart if more than 5 errors in 15 min
-            if failures > 5:
-                logger.info("too many failures, restart the whole thing")
-                stop_all_and_exit()
-                break
+            try:
+                sleep(1)
+                toRestart= []
+                toRemove= []
+                for thread in activeThreads:
+                    if not thread.is_alive() or not thread.bot.alive:
+                        logger.info("%s died. stopping" % thread.bot.id)
+                        toRestart.append(thread.originalSettings)
+                        thread.bot.exit()
+                        toRemove.append(thread)
+                        failures = failures + 1
+                        lastError= time()
+                for thread in toRemove:
+                    activeThreads.remove(thread)
+                if time() - lastError > 60*15:
+                    failures= 0 # reset errorCount after 15 minutes. only restart if more than 5 errors in 15 min
+                if failures > 5:
+                    logger.info("too many failures, restart the whole thing")
+                    stop_all_and_exit()
+                    break
 
-            for usedSettings in toRestart:
-                logger.info("restarting " + usedSettings.id)
-                sleep(10)
-                activeThreads.append(start_bot(usedSettings))
+                for usedSettings in toRestart:
+                    logger.info("restarting " + usedSettings.id)
+                    sleep(10)
+                    activeThreads.append(start_bot(usedSettings))
 
-            write_dashboard(settings.DASHBOARD_FILE)
-
+                write_dashboard(settings.DASHBOARD_FILE)
+            except Exception as e:
+                logger.error("exception in main loop:\n "+ traceback.format_exc())
     else:
         logger.warn("no bots defined. nothing to do")
 
