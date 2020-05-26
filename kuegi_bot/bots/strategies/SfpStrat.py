@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 from typing import List
 
@@ -8,7 +9,7 @@ from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType, Pos
 
 
 class SfpStrategy(ChannelStrategy):
-    def __init__(self, tp_fac: float = 0, init_stop_type: int = 0,
+    def __init__(self, tp_fac: float = 0, tp_use_atr: bool= False, init_stop_type: int = 0,
                  min_wick_fac: float = 0.2, min_swing_length: int = 2,
                  range_length: int = 50, min_rej_length: int= 25, range_filter_fac: float = 0,
                  close_on_opposite: bool = False, entries: int = 0):
@@ -17,6 +18,7 @@ class SfpStrategy(ChannelStrategy):
         self.min_swing_length = min_swing_length
         self.init_stop_type = init_stop_type
         self.tp_fac = tp_fac
+        self.tp_use_atr= tp_use_atr
         self.range_length = range_length
         self.min_rej_length= min_rej_length
         self.range_filter_fac = range_filter_fac
@@ -147,7 +149,10 @@ class SfpStrategy(ChannelStrategy):
             self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.SL),
                                                   amount=-amount, stop=stop, limit=None))
             if self.tp_fac > 0:
-                tp = entry - (stop - entry) * self.tp_fac
+                ref = entry - stop
+                if self.tp_use_atr:
+                   ref = math.copysign(data.atr, entry - stop)
+                tp = entry + ref * self.tp_fac
                 self.order_interface.send_order(Order(orderId=TradingBot.generate_order_id(posId, OrderType.TP),
                                                       amount=-amount, stop=None, limit=tp))
             pos.status= PositionStatus.OPEN
