@@ -50,7 +50,7 @@ def load_settings_from_args():
 def load_bars(days_in_history, wanted_tf, start_offset_minutes=0,exchange='bitmex'):
     knownfiles= {
         "bitmex": 45,
-        "bybit": 15,
+        "bybit": 16,
         "binance": 6,
         "binanceSpot": 28
     }

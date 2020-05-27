@@ -32,12 +32,12 @@ class SilentLogger(object):
 
 class BackTest(OrderInterface):
 
-    def __init__(self, bot: TradingBot, bars: list,symbol:Symbol=None):
+    def __init__(self, bot: TradingBot, bars: list,symbol:Symbol=None,market_slipage_percent= 0.15):
         self.bars: List[Bar] = bars
         self.bot = bot
         self.bot.prepare(SilentLogger(),self)
 
-        self.market_slipage_percent = 0.15
+        self.market_slipage_percent = market_slipage_percent
         self.maker_fee = -0.00025
         self.taker_fee = 0.00075
 
@@ -220,15 +220,15 @@ class BackTest(OrderInterface):
             self.current_bars[0].did_change = True
             self.current_bars[1].did_change = True
             # self.bot.on_tick(self.current_bars, self.account)
-            should_execute = True
             for subbar in reversed(next_bar.subbars):
                 # check open orders & update account
-                should_execute = self.handle_open_orders(subbar) or should_execute or True # always execute cause of BE
+                self.handle_open_orders(subbar)
+                open= len(self.account.open_orders)
                 forming_bar.add_subbar(subbar)
-                if should_execute:
-                    self.bot.on_tick(self.current_bars, self.account)
+                self.bot.on_tick(self.current_bars, self.account)
+                if open != len(self.account.open_orders):
+                    self.handle_open_orders(subbar) # got new ones
                 self.current_bars[1].did_change = False
-                should_execute = False
 
             next_bar.bot_data = forming_bar.bot_data
             for b in self.current_bars:
