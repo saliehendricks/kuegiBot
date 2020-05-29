@@ -57,6 +57,7 @@ class ParaData:
         self.acc = 0
         self.ep = 0
         self.stop = 0
+        self.actualStop= None
 
 
 class ParaTrail(ExitModule):
@@ -65,15 +66,17 @@ class ParaTrail(ExitModule):
     lastEp and factor is stored in the bar data with the positionId
     '''
 
-    def __init__(self, accInit, accInc, accMax):
+    def __init__(self, accInit, accInc, accMax, resetToCurrent= False):
         super().__init__()
         self.accInit = accInit
         self.accInc = accInc
         self.accMax = accMax
+        self.resetToCurrent= resetToCurrent
 
     def init(self, logger):
         super().init(logger)
-        self.logger.info("init ParaTrail %.2f %.2f %.2f" % (self.accInit, self.accInc, self.accMax))
+        self.logger.info("init ParaTrail %.2f %.2f %.2f %s" %
+                         (self.accInit, self.accInc, self.accMax, self.resetToCurrent))
 
     def data_id(self,position:Position):
         return position.id + '_paraExit'
@@ -84,10 +87,15 @@ class ParaTrail(ExitModule):
 
         self.update_bar_data(position, bars)
         data = self.get_data(bars[0],self.data_id(position))
-        # trail
         newStop = order.stop_price
+
+        # trail
         if data is not None and (data.stop - newStop) * position.amount > 0:
             newStop = math.floor(data.stop) if position.amount < 0 else math.ceil(data.stop)
+
+        if data is not None and data.actualStop != newStop:
+            data.actualStop = newStop
+            self.write_data(bar=bars[0], dataId=self.data_id(position), data=data)
 
         if newStop != order.stop_price:
             order.stop_price = newStop
@@ -116,10 +124,14 @@ class ParaTrail(ExitModule):
                 current.acc = last.acc
                 if current.ep != last.ep:
                     current.acc = min(current.acc + self.accInc, self.accMax)
-                current.stop = last.stop + (current.ep - last.stop) * current.acc
+                lastStop = last.stop
+                if self.resetToCurrent and last.actualStop is not None:
+                    lastStop= last.actualStop
+                current.stop = lastStop + (current.ep - last.stop) * current.acc
             else:  # means its the first bar of the position
                 current.ep = currentBar.high if position.amount > 0 else currentBar.low
                 current.acc = self.accInit
                 current.stop = position.initial_stop
+
             self.write_data(bar=currentBar, dataId=dataId, data=current)
             lastIdx -= 1
