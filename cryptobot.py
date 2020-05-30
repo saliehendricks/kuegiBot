@@ -89,9 +89,13 @@ def start_bot(botSettings):
                         strat.withExitModule(SimpleBE(factor=stratSettings[factorKey],
                                                       buffer=stratSettings[bufferKey]))
                 if "EM_PARA_INIT" in stratSettings.keys():
+                    resetToCurrent= False
+                    if "EM_PARA_RESET" in stratSettings.keys():
+                        resetToCurrent= stratSettings.EM_PARA_RESET
                     strat.withExitModule(ParaTrail(accInit=stratSettings.EM_PARA_INIT,
                                                    accInc=stratSettings.EM_PARA_INC,
-                                                   accMax=stratSettings.EM_PARA_MAX))
+                                                   accMax=stratSettings.EM_PARA_MAX,
+                                                   resetToCurrent=resetToCurrent))
                 if "FILTER_DAYWEEK" in stratSettings.keys():
                     strat.withEntryFilter(DayOfWeekFilter(stratSettings.FILTER_DAYWEEK))
                 bot.add_strategy(strat)
