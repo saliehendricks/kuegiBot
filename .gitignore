@@ -11,3 +11,4 @@ openPositions/
 settings/
 dashboard.json
 positionHistory/
+*.tpl.js
