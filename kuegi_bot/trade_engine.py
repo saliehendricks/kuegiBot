@@ -149,6 +149,7 @@ class LiveTrading(OrderInterface):
                                 newBar.add_subbar(sub)
                             else:
                                 continue
+                        newBar.bot_data= self.bars[0].bot_data # merge bot data to not loose it
                         self.bars[0] = newBar
                 else:  # b.tstamp > self.bars[0].tstamp
                     self.bars.insert(0, b)

@@ -1,9 +1,10 @@
 from kuegi_bot.utils import log
-from kuegi_bot.trade_engine import Bar
 
 from typing import List
 
 from enum import Enum
+
+from kuegi_bot.utils.trading_classes import Bar
 
 
 class BarSeries(Enum):

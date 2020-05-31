@@ -2,7 +2,7 @@ import math
 from functools import reduce
 
 import plotly.graph_objects as go
-from kuegi_bot.bots.trading_bot import  TradingBot
+from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.utils.trading_classes import Position,  Account, Bar, Symbol
 from typing import List
 

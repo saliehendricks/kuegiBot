@@ -5,10 +5,58 @@
 import math
 from typing import List
 
-from kuegi_bot.bots.strategies.strat_with_exit_modules import ExitModule
 from kuegi_bot.indicators.indicator import Indicator, clean_range
+from kuegi_bot.utils.dotdict import dotdict
 from kuegi_bot.utils.trading_classes import Position, Bar
 
+
+class ExitModule:
+    def __init__(self):
+        self.logger = None
+        pass
+
+    def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
+        pass
+
+    def init(self, logger):
+        self.logger = logger
+
+    def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
+        return True
+
+    def get_stop_for_unmatched_amount(self, amount: float, bars: List[Bar]):
+        return None
+
+    def get_data(self, bar: Bar, dataId):
+        if 'modules' in bar.bot_data.keys() and dataId in bar.bot_data['modules'].keys():
+            return bar.bot_data["modules"][dataId]
+        else:
+            return None
+
+    def write_data(self, bar: Bar, dataId, data):
+        if "modules" not in bar.bot_data.keys():
+            bar.bot_data['modules'] = {}
+
+        bar.bot_data["modules"][dataId] = data
+
+    @staticmethod
+    def get_data_for_json(bar:Bar):
+        result= {}
+        if bar is not None and bar.bot_data is not None and 'modules' in bar.bot_data.keys():
+            for key in bar.bot_data['modules'].keys():
+                if isinstance(bar.bot_data['modules'][key],dict):
+                    result[key]= bar.bot_data['modules'][key]
+                else:
+                    result[key]= bar.bot_data['modules'][key].__dict__
+        return result
+
+    @staticmethod
+    def set_data_from_json(bar:Bar,jsonData):
+        if "modules" not in bar.bot_data.keys():
+            bar.bot_data['modules'] = {}
+        for key in jsonData.keys():
+            if len(jsonData[key].keys()) > 0:
+                bar.bot_data['modules'][key]= dotdict(jsonData[key])
 
 class SimpleBE(ExitModule):
     ''' trails the stop to "break even" when the price move a given factor of the entry-risk in the right direction
@@ -96,6 +144,11 @@ class ParaTrail(ExitModule):
         if data is not None and data.actualStop != newStop:
             data.actualStop = newStop
             self.write_data(bar=bars[0], dataId=self.data_id(position), data=data)
+        # if restart, the last actual is not set and we might miss increments cause of regular restarts.
+        lastdata= self.get_data(bars[1],self.data_id(position))
+        if lastdata is not None and lastdata.actualStop is None:
+            lastdata.actualStop= order.stop_price
+            self.write_data(bar=bars[1], dataId=self.data_id(position), data=lastdata)
 
         if newStop != order.stop_price:
             order.stop_price = newStop
@@ -118,6 +171,7 @@ class ParaTrail(ExitModule):
             lastbar = bars[lastIdx]
             currentBar = bars[lastIdx - 1]
             last: ParaData = self.get_data(lastbar, dataId)
+            prev: ParaData = self.get_data(currentBar, dataId)
             current: ParaData = ParaData()
             if last is not None:
                 current.ep = max(last.ep, currentBar.high) if position.amount > 0 else min(last.ep, currentBar.low)
@@ -125,13 +179,14 @@ class ParaTrail(ExitModule):
                 if current.ep != last.ep:
                     current.acc = min(current.acc + self.accInc, self.accMax)
                 lastStop = last.stop
-                if self.resetToCurrent and last.actualStop is not None:
+                if self.resetToCurrent and last.actualStop is not None and (last.actualStop - last.stop) * position.amount > 0:
                     lastStop= last.actualStop
                 current.stop = lastStop + (current.ep - last.stop) * current.acc
             else:  # means its the first bar of the position
                 current.ep = currentBar.high if position.amount > 0 else currentBar.low
                 current.acc = self.accInit
                 current.stop = position.initial_stop
-
+            if prev is not None:
+                current.actualStop = prev.actualStop # not to loose it
             self.write_data(bar=currentBar, dataId=dataId, data=current)
             lastIdx -= 1

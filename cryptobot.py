@@ -13,7 +13,7 @@ from kuegi_bot.bots.kuegi_bot import KuegiBot
 from kuegi_bot.bots.strategies.SfpStrat import SfpStrategy
 from kuegi_bot.bots.strategies.entry_filters import DayOfWeekFilter
 from kuegi_bot.bots.strategies.kuegi_strat import KuegiStrategy
-from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail
+from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail, ExitModule
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.trade_engine import LiveTrading
 from kuegi_bot.utils import log
@@ -163,6 +163,10 @@ def write_dashboard(dashboardFile):
                 data['positions'] = []
                 for pos in bot.bot.open_positions:
                     data['positions'].append(bot.bot.open_positions[pos].to_json())
+                data['moduleData'] = {}
+                data['moduleData'][bot.bars[0].tstamp] = ExitModule.get_data_for_json(bot.bars[0])
+                data['moduleData'][bot.bars[1].tstamp] = ExitModule.get_data_for_json(bot.bars[1])
+
             else:
                 result[bot.id] = {"alive": False}
         except Exception as e:

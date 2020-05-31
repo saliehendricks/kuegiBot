@@ -1,39 +1,11 @@
 from typing import List
 from functools import reduce
 
-from kuegi_bot.bots.MultiStrategyBot import Strategy
+from kuegi_bot.bots.strategies.exit_modules import ExitModule
 from kuegi_bot.bots.trading_bot import TradingBot
+from kuegi_bot.bots.MultiStrategyBot import Strategy
 from kuegi_bot.utils.trading_classes import Bar, Account, Symbol, OrderType
 
-
-class ExitModule:
-    def __init__(self):
-        self.logger = None
-        pass
-
-    def manage_open_order(self, order, position, bars, to_update, to_cancel, open_positions):
-        pass
-
-    def init(self, logger):
-        self.logger = logger
-
-    def got_data_for_position_sync(self, bars: List[Bar]) -> bool:
-        return True
-
-    def get_stop_for_unmatched_amount(self, amount: float, bars: List[Bar]):
-        return None
-
-    def get_data(self, bar: Bar, dataId):
-        if 'modules' in bar.bot_data.keys() and dataId in bar.bot_data['modules'].keys():
-            return bar.bot_data["modules"][dataId]
-        else:
-            return None
-
-    def write_data(self, bar: Bar, dataId, data):
-        if "modules" not in bar.bot_data.keys():
-            bar.bot_data['modules'] = {}
-
-        bar.bot_data["modules"][dataId] = data
 
 class EntryFilter:
     def __init__(self):

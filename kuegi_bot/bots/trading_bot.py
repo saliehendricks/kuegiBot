@@ -1,3 +1,4 @@
+from kuegi_bot.bots.strategies.exit_modules import ExitModule
 from kuegi_bot.utils.trading_classes import Bar, Position, Symbol, OrderInterface, Account, OrderType, Order, \
     PositionStatus
 
@@ -70,6 +71,14 @@ class TradingBot:
                     for pos_json in data["positions"]:
                         pos: Position = Position.from_json(pos_json)
                         self.open_positions[pos.id] = pos
+                    if "moduleData" in data.keys():
+                        if str(bars[0].tstamp) in data["moduleData"].keys():
+                            moduleData = data['moduleData'][str(bars[0].tstamp)]
+                            ExitModule.set_data_from_json(bars[0], moduleData)
+                        if str(bars[1].tstamp) in data["moduleData"].keys():
+                            moduleData = data['moduleData'][str(bars[1].tstamp)]
+                            ExitModule.set_data_from_json(bars[1], moduleData)
+
                     self.logger.info("done loading " + str(
                         len(self.open_positions)) + " positions from " + self._get_pos_file() + " last time " + str(
                         self.last_time))
@@ -389,7 +398,7 @@ class TradingBot:
 
     #####################################################
 
-    def save_open_positions(self):
+    def save_open_positions(self, bars:List[Bar]):
         if self.unique_id is None:
             return
         base = 'openPositions/'
@@ -401,9 +410,14 @@ class TradingBot:
             pos_json = []
             for pos in self.open_positions:
                 pos_json.append(self.open_positions[pos].to_json())
+            moduleData = {}
+            moduleData[bars[0].tstamp]=ExitModule.get_data_for_json(bars[0])
+            moduleData[bars[1].tstamp]=ExitModule.get_data_for_json(bars[1])
+
             data = {"last_time": self.last_time,
                     "last_tick": str(self.last_tick_time),
-                    "positions": pos_json}
+                    "positions": pos_json,
+                    "moduleData":moduleData}
             json.dump(data, file, sort_keys=False, indent=4)
 
     def cancel_all_orders_for_position(self, positionId, account: Account):
@@ -466,7 +480,7 @@ class TradingBot:
         except Exception as e:
             self.save_open_positions()
             raise e
-        self.save_open_positions()
+        self.save_open_positions(bars)
 
     def prep_bars(self, bars: List[Bar]):
         pass
