@@ -168,7 +168,10 @@ class Position:
     def to_json(self):
         tempdic = dict(self.__dict__)
         tempdic['status'] = self.status.value
-        del tempdic['connectedOrders']
+        orders= tempdic['connectedOrders']
+        tempdic['connectedOrders']= []
+        for order in orders:
+            tempdic['connectedOrders'].append(order.__dict__)
         return tempdic
 
     @staticmethod

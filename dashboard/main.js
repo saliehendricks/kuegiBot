@@ -38,6 +38,12 @@ function refresh() {
                 if(pos.status == "open") {
                     totalPos += pos.amount;
                 }
+
+                pos.connectedOrders.forEach(function(order) {
+                    if(order.id.includes("_SL_")) {
+                        pos.currentStop= order.stop_price;
+                    }
+                });
             });
             bot.totalPos = totalPos;
             var div= template(bot);
