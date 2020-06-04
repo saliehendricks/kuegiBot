@@ -51,7 +51,7 @@ def load_bars(days_in_history, wanted_tf, start_offset_minutes=0,exchange='bitme
     knownfiles= {
         "bitmex": 45,
         "bybit": 16,
-        "binance": 6,
+        "binance": 7,
         "binanceSpot": 28
     }
     end = knownfiles[exchange]
