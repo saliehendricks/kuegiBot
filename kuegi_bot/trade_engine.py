@@ -10,13 +10,14 @@ from kuegi_bot.exchanges.binance.binance_interface import BinanceInterface
 from kuegi_bot.exchanges.bitmex.bitmex_interface import BitmexInterface
 from kuegi_bot.exchanges.bybit.bybit_interface import ByBitInterface
 from kuegi_bot.utils import log, errors
+from kuegi_bot.utils.telegram import TelegramBot
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.utils.trading_classes import OrderInterface, Order, Account, Bar, Symbol, ExchangeInterface
 
 
 class LiveTrading(OrderInterface):
 
-    def __init__(self, settings, trading_bot: TradingBot):
+    def __init__(self, settings, telegram: TelegramBot, trading_bot: TradingBot):
         self.settings = settings
         self.id = self.settings.id
         self.last_tick= 0
@@ -25,6 +26,9 @@ class LiveTrading(OrderInterface):
                                               log_level=settings.LOG_LEVEL,
                                               logToConsole=settings.LOG_TO_CONSOLE,
                                               logToFile=settings.LOG_TO_FILE)
+
+        self.telegram_bot = telegram
+
         self.logger.info("#############################")
         self.logger.info("############ Start LiveTrading "+settings.id+" on "+settings.EXCHANGE+" #################")
         self.exchange: ExchangeInterface = None
@@ -52,6 +56,12 @@ class LiveTrading(OrderInterface):
             self.account: Account = Account()
             self.update_account()
             self.bot.reset()
+            if self.telegram_bot is not None:
+                pos= "no pos"
+                if self.account.open_position is not None and self.account.open_position.avgEntryPrice is not None:
+                    pos= "%.2f @ %.2f" % (self.account.open_position.quantity,self.account.open_position.avgEntryPrice)
+                self.telegram_bot.send("%s loaded, ready to go with %.2f in wallet and pos %s" % 
+                    (self.id, self.account.equity,pos))
         else:
             self.alive = False
 
@@ -76,15 +86,21 @@ class LiveTrading(OrderInterface):
         if order.amount == 0:
             self.logger.error("trying to send order without amount")
             return
+        if self.telegram_bot is not None:
+            self.telegram_bot.send(self.id+" sending order:"+order.id+" "+order.print_info())
         order.tstamp = self.bars[0].tstamp
         if order not in self.account.open_orders:  # bot might add it himself temporarily.
             self.account.open_orders.append(order)
         self.exchange.send_order(order)
 
     def update_order(self, order: Order):
+        if self.telegram_bot is not None:
+            self.telegram_bot.send(self.id+" updating order:"+order.id+" "+order.print_info())
         self.exchange.update_order(order)
 
     def cancel_order(self, order: Order):
+        if self.telegram_bot is not None:
+            self.telegram_bot.send(self.id+" canceling order:"+order.id+" "+order.print_info())
         order.active= False # already mark it as cancelled, so not to mess up next loop
         self.exchange.cancel_order(order)
 
