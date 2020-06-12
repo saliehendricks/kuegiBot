@@ -60,7 +60,7 @@ class LiveTrading(OrderInterface):
                 pos= "no pos"
                 if self.account.open_position is not None and self.account.open_position.avgEntryPrice is not None:
                     pos= "%.2f @ %.2f" % (self.account.open_position.quantity,self.account.open_position.avgEntryPrice)
-                self.telegram_bot.send("%s loaded, ready to go with %.2f in wallet and pos %s" % 
+                self.telegram_bot.send_log("%s loaded, ready to go with %.2f in wallet and pos %s" % 
                     (self.id, self.account.equity,pos))
         else:
             self.alive = False
@@ -87,7 +87,7 @@ class LiveTrading(OrderInterface):
             self.logger.error("trying to send order without amount")
             return
         if self.telegram_bot is not None:
-            self.telegram_bot.send(self.id+" sending order:"+order.id+" "+order.print_info())
+            self.telegram_bot.send_log(self.id+" sending order: "+order.print_info())
         order.tstamp = self.bars[0].tstamp
         if order not in self.account.open_orders:  # bot might add it himself temporarily.
             self.account.open_orders.append(order)
@@ -95,12 +95,12 @@ class LiveTrading(OrderInterface):
 
     def update_order(self, order: Order):
         if self.telegram_bot is not None:
-            self.telegram_bot.send(self.id+" updating order:"+order.id+" "+order.print_info())
+            self.telegram_bot.send_log(self.id+" updating order: "+order.print_info())
         self.exchange.update_order(order)
 
     def cancel_order(self, order: Order):
         if self.telegram_bot is not None:
-            self.telegram_bot.send(self.id+" canceling order:"+order.id+" "+order.print_info())
+            self.telegram_bot.send_log(self.id+" canceling order: "+order.print_info())
         order.active= False # already mark it as cancelled, so not to mess up next loop
         self.exchange.cancel_order(order)
 
@@ -129,11 +129,11 @@ class LiveTrading(OrderInterface):
             if o.active:
                 self.account.open_orders.append(o)
             elif len(o.id) > 0 and o.id in prevOpenIds:
-                self.logger.info(
-                    "order %s got %s @ %s" % (
-                        o.id,
-                        ("executed" if o.executed_amount != 0 else "canceled"),
-                        ("%.1f" % o.executed_price) if o.executed_price is not None else None))
+                exec_type= ("executed" if o.executed_amount != 0 else "canceled")
+                price= ("%.1f" % o.executed_price) if o.executed_price is not None else None
+                if self.telegram_bot is not None:
+                    self.telegram_bot.send_log("%s: order %s got %s @ %s" % (self.id, o.id, exec_type, price))
+                self.logger.info("order %s got %s @ %s" % (o.id, exec_type, price))
                 self.account.order_history.append(o)
 
     def update_bars(self):

@@ -4,6 +4,7 @@ from functools import reduce
 import plotly.graph_objects as go
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.utils.trading_classes import Position,  Account, Bar, Symbol
+from kuegi_bot.utils.telegram import TelegramBot
 from typing import List
 
 
@@ -16,6 +17,7 @@ class Strategy:
         self.risk_type = 0  # 0= all equal, 1= 1 atr eq 1 R
         self.atr_factor_risk= 1
         self.max_risk_mul = 1
+        self.telegram:TelegramBot= None
 
     def myId(self):
         return "GenericStrategy"
@@ -56,6 +58,13 @@ class Strategy:
 
     def add_to_plot(self, fig: go.Figure, bars: List[Bar], time):
         pass
+
+    def with_telegram(self, telegram:TelegramBot):
+        self.telegram= telegram
+
+    def send_signal_message(self, signal_message:str):
+        if self.telegram is not None:
+            self.telegram.send_signal(signal_message)
 
     def withRM(self, risk_factor: float = 0.01, max_risk_mul: float = 2, risk_type: int = 0, atr_factor: float = 1):
         self.risk_factor = risk_factor

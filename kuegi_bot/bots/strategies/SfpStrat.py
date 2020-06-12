@@ -119,6 +119,7 @@ class SfpStrategy(ChannelStrategy):
         
         if (longSFP or longRej) and (bars[1].high - bars[1].close) > atr * self.min_wick_fac \
                 and directionFilter <= 0 and bars[1].high > rangeMedian + atr * self.range_filter_fac:
+            self.send_signal_message("sfp strat: short entry triggered")
             # close existing short pos
             if self.close_on_opposite:
                 for pos in open_positions.values():
@@ -159,6 +160,7 @@ class SfpStrategy(ChannelStrategy):
 
         if (shortSFP or shortRej) and (bars[1].close - bars[1].low) > atr * self.min_wick_fac \
                 and directionFilter >= 0 and bars[1].low < rangeMedian - self.range_filter_fac:
+            self.send_signal_message("sfp strat: long entry triggered")
             # close existing short pos
             if self.close_on_opposite:
                 for pos in open_positions.values():
