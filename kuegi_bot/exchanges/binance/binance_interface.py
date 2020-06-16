@@ -3,13 +3,12 @@ from datetime import datetime
 from typing import List
 
 import binance_f
-from binance_f import RequestClient, SubscriptionClient
-from binance_f.exception.binanceapiexception import BinanceApiException
+from binance_f import RequestClient
 from binance_f.model import OrderSide, OrderType, TimeInForce, CandlestickInterval, SubscribeMessageType
-from binance_f.model.accountupdate import Position
+from binance_f.model.accountupdate import Balance, Position
 from binance_f.model.candlestickevent import Candlestick
 
-from binance_f.model.accountupdate import Balance
+from kuegi_bot.exchanges.binance.binance_websocket import BinanceWebsocket
 from kuegi_bot.utils.trading_classes import ExchangeInterface, Order, Bar, Account, AccountPosition, \
     process_low_tf_bars, Symbol
 
@@ -18,37 +17,39 @@ class BinanceInterface(ExchangeInterface):
 
     def __init__(self, settings, logger, on_tick_callback=None):
         super().__init__(settings, logger, on_tick_callback)
-        self.symbol : str = settings.SYMBOL
+        self.symbol: str = settings.SYMBOL
         self.client = RequestClient(api_key=settings.API_KEY,
                                     secret_key=settings.API_SECRET)
-        self.ws = SubscriptionClient(api_key=settings.API_KEY,
-                                     secret_key=settings.API_SECRET)
+        self.ws = BinanceWebsocket(wsURL="wss://fstream.binance.com/ws",
+                                   api_key=settings.API_KEY,
+                                   api_secret=settings.API_SECRET,
+                                   logger=logger,
+                                   callback=self.callback)
 
-        # for binance the key is the internal id (not the exchange id) cause we can't update order but have to cancel and reopen with same id.
-        # that leads to different exchange id, but we need to know its the same.
+        # for binance the key is the internal id (not the exchange id) cause we can't update order but have to cancel
+        # and reopen with same id. that leads to different exchange id, but we need to know its the same.
         self.orders = {}
         self.positions = {}
-        self.symbol_object : Symbol = None
+        self.symbol_object: Symbol = None
         self.candles: List[Candlestick] = []
         self.last = 0
-        self.open = False
         self.listen_key = ""
         self.lastUserDataKeep = None
-        self.wantedResponses= 0 # needed to wait for realtime
+        self.wantedResponses = 0  # needed to wait for realtime
         self.init()
 
     def init(self):
         self.logger.info("loading market data. this may take a moment")
         self.initOrders()
         self.initPositions()
-        self.symbol_object= self.get_instrument()
+        self.symbol_object = self.get_instrument()
         self.logger.info("got all data. subscribing to live updates.")
         self.listen_key = self.client.start_user_data_stream()
         self.lastUserDataKeep = time.time()
-        self.wantedResponses= 2
+        self.wantedResponses = 2
         subInt = CandlestickInterval.MIN1 if self.settings.MINUTES_PER_BAR <= 60 else CandlestickInterval.HOUR1
-        self.ws.subscribe_candlestick_event(self.symbol.lower(), subInt, self.callback, self.error)
-        self.ws.subscribe_user_data_event(self.listen_key, self.callback, self.error)
+        self.ws.subscribe_candlestick_event(self.symbol.lower(), subInt)
+        self.ws.subscribe_user_data_event(self.listen_key)
         waitingTime = 0
         while self.wantedResponses > 0 and waitingTime < 100:
             waitingTime += 1
@@ -56,14 +57,13 @@ class BinanceInterface(ExchangeInterface):
 
         if self.wantedResponses > 0:
             self.logger.error("got no response to subscription. outa here")
-            self.open= False
-            return
-        self.open = True
-        self.logger.info("ready to go")
+            self.ws.exit()
+        else:
+            self.logger.info("ready to go")
 
     def callback(self, data_type: 'SubscribeMessageType', event: 'any'):
         gotTick = False
-        fromAccount= False
+        fromAccount = False
         # refresh userdata every 5 min
         if self.lastUserDataKeep < time.time() - 5 * 60:
             self.lastUserDataKeep = time.time()
@@ -96,7 +96,7 @@ class BinanceInterface(ExchangeInterface):
                 # 'positions': [<binance_f.model.accountupdate.Position object at 0x000001FAF470E1C0>...]}
                 usdBalance = 0
                 gotTick = True
-                fromAccount= True
+                fromAccount = True
                 for b in event.balances:
                     bal: Balance = b
                     if bal.asset == "USDT":
@@ -105,10 +105,10 @@ class BinanceInterface(ExchangeInterface):
                     pos: Position = p
                     if pos.symbol not in self.positions.keys():
                         self.positions[pos.symbol] = AccountPosition(
-                                                         symbol=pos.symbol,
-                                                         avgEntryPrice=float(pos.entryPrice),
-                                                         quantity=float(pos.amount),
-                                                         walletBalance=usdBalance if "USDT" in pos.symbol else 0)
+                            symbol=pos.symbol,
+                            avgEntryPrice=float(pos.entryPrice),
+                            quantity=float(pos.amount),
+                            walletBalance=usdBalance if "USDT" in pos.symbol else 0)
                     else:
                         accountPos = self.positions[pos.symbol]
                         accountPos.quantity = float(pos.amount)
@@ -125,7 +125,7 @@ class BinanceInterface(ExchangeInterface):
                 # 'orderTradeTime': 1587063513589, 'tradeID': 0, 'bidsNotional': 138.81, 'asksNotional': 0.0,
                 # 'isMarkerSide': False, 'isReduceOnly': False, 'workingType': 'CONTRACT_PRICE'}
                 gotTick = True
-                fromAccount= True
+                fromAccount = True
                 sideMulti = 1 if event.side == 'BUY' else -1
                 order: Order = Order(orderId=event.clientOrderId,
                                      stop=event.stopPrice if event.stopPrice > 0 else None,
@@ -138,7 +138,7 @@ class BinanceInterface(ExchangeInterface):
                 order.executed_amount = event.cumulativeFilledQty * sideMulti
                 order.executed_price = event.avgPrice
                 order.tstamp = event.transactionTime
-                order.execution_tstamp = event.orderTradeTime/1000
+                order.execution_tstamp = event.orderTradeTime / 1000
                 order.active = event.orderStatus in ["NEW", "PARTIALLY_FILLED"]
 
                 prev: Order = self.orders[order.id] if order.id in self.orders.keys() else None
@@ -162,10 +162,6 @@ class BinanceInterface(ExchangeInterface):
 
         if gotTick and self.on_tick_callback is not None:
             self.on_tick_callback(fromAccountAction=fromAccount)  # got something new
-
-    def error(self, e: BinanceApiException):
-        self.logger.error(e.error_code +": "+ e.error_message)
-        self.open= False
 
     def initOrders(self):
         apiOrders = self.client.get_open_orders()
@@ -195,9 +191,9 @@ class BinanceInterface(ExchangeInterface):
                 usdBalance = bal.balance
         api_positions = self.client.get_position()
         self.positions[self.symbol] = AccountPosition(self.symbol,
-                                                     avgEntryPrice=0,
-                                                     quantity=0,
-                                                     walletBalance=usdBalance if "USDT" in self.symbol else 0)
+                                                      avgEntryPrice=0,
+                                                      quantity=0,
+                                                      walletBalance=usdBalance if "USDT" in self.symbol else 0)
         if api_positions is not None:
             for pos in api_positions:
                 self.positions[pos.symbol] = AccountPosition(pos.symbol,
@@ -211,10 +207,7 @@ class BinanceInterface(ExchangeInterface):
                                                                    self.positions[self.symbol].avgEntryPrice))
 
     def exit(self):
-        self.open = False
-        if self.ws is not None:
-            self.ws.close()
-            self.ws= None
+        self.ws.exit()
         self.client.close_user_data_stream()
 
     def internal_cancel_order(self, order: Order):
@@ -224,32 +217,32 @@ class BinanceInterface(ExchangeInterface):
 
     def internal_send_order(self, order: Order):
         if order.limit_price is not None:
-            order.limit_price= round(order.limit_price,self.symbol_object.pricePrecision)
+            order.limit_price = round(order.limit_price, self.symbol_object.pricePrecision)
             if order.stop_price is not None:
-                order.stop_price= round(order.stop_price,self.symbol_object.pricePrecision)
+                order.stop_price = round(order.stop_price, self.symbol_object.pricePrecision)
                 order_type = OrderType.STOP
             else:
                 order_type = OrderType.LIMIT
         elif order.stop_price is not None:
-            order.stop_price= round(order.stop_price,self.symbol_object.pricePrecision)
+            order.stop_price = round(order.stop_price, self.symbol_object.pricePrecision)
             order_type = OrderType.STOP_MARKET
         else:
             order_type = OrderType.MARKET
 
-        order.amount= round(order.amount,self.symbol_object.quantityPrecision)
-        quantityFormat= "{:."+str(self.symbol_object.quantityPrecision)+"f}"
-        priceFormat= "{:."+str(self.symbol_object.pricePrecision)+"f}"
-        # yes have to send the price and quantity in as str (although it wants float) cause otherwise it converts it inernally
-        # and that sometimes fuck up the precision (0.023 -> 0.02299999999)
+        order.amount = round(order.amount, self.symbol_object.quantityPrecision)
+        quantityFormat = "{:." + str(self.symbol_object.quantityPrecision) + "f}"
+        priceFormat = "{:." + str(self.symbol_object.pricePrecision) + "f}"
+        # yes have to send the price and quantity in as str (although it wants float) cause otherwise it converts it
+        # inernally and that sometimes fuck up the precision (0.023 -> 0.02299999999)
         resultOrder: binance_f.model.Order = self.client.post_order(
-                                                            symbol=self.symbol,
-                                                            side=OrderSide.BUY if order.amount > 0 else OrderSide.SELL,
-                                                            ordertype=order_type,
-                                                            timeInForce=TimeInForce.GTC if order_type in [OrderType.LIMIT, OrderType.STOP] else None,
-                                                            quantity=quantityFormat.format(abs(order.amount)),
-                                                            price=priceFormat.format(order.limit_price) if order.limit_price is not None else None,
-                                                            stopPrice=priceFormat.format(order.stop_price) if order.stop_price is not None else None,
-                                                            newClientOrderId=order.id)
+            symbol=self.symbol,
+            side=OrderSide.BUY if order.amount > 0 else OrderSide.SELL,
+            ordertype=order_type,
+            timeInForce=TimeInForce.GTC if order_type in [OrderType.LIMIT, OrderType.STOP] else None,
+            quantity=quantityFormat.format(abs(order.amount)),
+            price=priceFormat.format(order.limit_price) if order.limit_price is not None else None,
+            stopPrice=priceFormat.format(order.stop_price) if order.stop_price is not None else None,
+            newClientOrderId=order.id)
         order.exchange_id = resultOrder.orderId
 
     def internal_update_order(self, order: Order):
@@ -280,13 +273,15 @@ class BinanceInterface(ExchangeInterface):
 
     @staticmethod
     def convertBar(apiBar: binance_f.model.candlestick.Candlestick):
-        return Bar(tstamp=apiBar.openTime / 1000, open=float(apiBar.open), high=float(apiBar.high), low=float(apiBar.low),
+        return Bar(tstamp=apiBar.openTime / 1000, open=float(apiBar.open), high=float(apiBar.high),
+                   low=float(apiBar.low),
                    close=float(apiBar.close),
                    volume=float(apiBar.volume))
 
     @staticmethod
     def convertBarevent(apiBar: binance_f.model.candlestickevent.Candlestick):
-        return Bar(tstamp=apiBar.startTime / 1000, open=float(apiBar.open), high=float(apiBar.high), low=float(apiBar.low),
+        return Bar(tstamp=apiBar.startTime / 1000, open=float(apiBar.open), high=float(apiBar.high),
+                   low=float(apiBar.low),
                    close=float(apiBar.close),
                    volume=float(apiBar.volume))
 
@@ -316,7 +311,7 @@ class BinanceInterface(ExchangeInterface):
                               tickSize=tickSize,
                               makerFee=0.02,
                               takerFee=0.04,
-                              pricePrecision= symb.pricePrecision,
+                              pricePrecision=symb.pricePrecision,
                               quantityPrecision=symb.quantityPrecision)
         return None
 
@@ -326,10 +321,10 @@ class BinanceInterface(ExchangeInterface):
         return self.positions[symbol] if symbol in self.positions.keys() else None
 
     def is_open(self):
-        return self.open
+        return not self.ws.exited
 
     def check_market_open(self):
-        return self.open  # TODO: is that the best we can do?
+        return self.is_open()
 
     def update_account(self, account: Account):
         pos = self.positions[self.symbol]

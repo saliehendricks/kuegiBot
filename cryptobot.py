@@ -209,7 +209,8 @@ def run(settings):
                 activeThreads.append(start_bot(botSettings=usedSettings, telegram=telegram_bot))
 
     logger.info("init done")
-    telegram_bot.send_log("init_done")
+    if telegram_bot is not None:
+        telegram_bot.send_log("init_done")
 
     if len(activeThreads) > 0:
         failures= 0
