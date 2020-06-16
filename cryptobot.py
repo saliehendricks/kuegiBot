@@ -17,11 +17,12 @@ from kuegi_bot.bots.strategies.exit_modules import SimpleBE, ParaTrail, ExitModu
 from kuegi_bot.bots.trading_bot import TradingBot
 from kuegi_bot.trade_engine import LiveTrading
 from kuegi_bot.utils import log
+from kuegi_bot.utils.telegram import TelegramBot
 from kuegi_bot.utils.dotdict import dotdict
 from kuegi_bot.utils.helper import load_settings_from_args
 
 
-def start_bot(botSettings):
+def start_bot(botSettings,telegram:TelegramBot=None):
     bot = MultiStrategyBot()
     originalSettings= dotdict(dict(botSettings))
     if "strategies" in botSettings.keys():
@@ -75,6 +76,7 @@ def start_bot(botSettings):
                 strat = None
                 logger.warn("unkown strategy: " + stratId)
             if strat is not None:
+                strat.with_telegram(telegram)
                 strat.withRM(risk_factor=stratSettings.KB_RISK_FACTOR,
                              risk_type=stratSettings.KB_RISK_TYPE,
                              max_risk_mul=stratSettings.KB_MAX_RISK_MUL,
@@ -126,7 +128,7 @@ def start_bot(botSettings):
                                         delayed_swing=botSettings.KB_DELAYED_ENTRY,
                                         trail_back=botSettings.KB_ALLOW_TRAIL_BACK)
                              )
-    live = LiveTrading(settings=botSettings, trading_bot=bot)
+    live = LiveTrading(settings=botSettings, trading_bot=bot,telegram=telegram)
     t = threading.Thread(target=live.run_loop)
     t.bot: LiveTrading = live
     t.originalSettings= originalSettings
@@ -188,7 +190,10 @@ def run(settings):
     if not settings:
         print("error: no settings defined. nothing to do. exiting")
         sys.exit()
-
+    if settings.TELEGRAM_BOT is not None:
+      telegram_bot:TelegramBot = TelegramBot(logger=logger,settings=dotdict(settings.TELEGRAM_BOT))
+    else:
+      telegram_bot= None
     logger.info("###### loading %i bots #########" % len(settings.bots))
     if settings.bots is not None:
         sets = settings.bots[:]
@@ -201,9 +206,10 @@ def run(settings):
                 logger.error("You have to put in apiKey and secret before starting!")
             else:
                 logger.info("starting " + usedSettings.id)
-                activeThreads.append(start_bot(usedSettings))
+                activeThreads.append(start_bot(botSettings=usedSettings, telegram=telegram_bot))
 
     logger.info("init done")
+    telegram_bot.send_log("init_done")
 
     if len(activeThreads) > 0:
         failures= 0
@@ -216,6 +222,7 @@ def run(settings):
                 for thread in activeThreads:
                     if not thread.is_alive() or not thread.bot.alive:
                         logger.info("%s died. stopping" % thread.bot.id)
+                        telegram_bot.send_log(thread.bot.id+" died. restarting")
                         toRestart.append(thread.originalSettings)
                         thread.bot.exit()
                         toRemove.append(thread)
@@ -233,7 +240,7 @@ def run(settings):
                 for usedSettings in toRestart:
                     logger.info("restarting " + usedSettings.id)
                     sleep(10)
-                    activeThreads.append(start_bot(usedSettings))
+                    activeThreads.append(start_bot(botSettings=usedSettings, telegram=telegram_bot))
 
                 write_dashboard(settings.DASHBOARD_FILE)
             except Exception as e:

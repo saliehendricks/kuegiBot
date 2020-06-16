@@ -200,6 +200,9 @@ class KuegiStrategy(ChannelStrategy):
                 # if len(self.open_positions) > 0:
                 # return
 
+                self.send_signal_message("kuegi strat: active channel found between %.0f and %.0f" %
+                                        ( shortEntry, longEntry))
+
                 signalId = 'kuegi+' + str(bars[0].tstamp)
                 if not foundLong and directionFilter >= 0 and entriesAllowed:
                     posId = TradingBot.full_pos_id(signalId, PositionDirection.LONG)
