@@ -83,10 +83,10 @@ pair= "BTCUSD"
 
 funding = load_funding('bybit',pair)
 
-#bars_p = load_bars(30 * 12, 240,0,'phemex')
+bars_p = load_bars(30 * 12, 240,0,'phemex')
 #bars_n = load_bars(30 * 12, 240,0,'binance_f')
 #bars_ns = load_bars(30 * 24, 240,0,'binanceSpot')
-bars_b = load_bars(30 * 18, 240,0,'bybit',pair)
+#bars_b = load_bars(30 * 18, 240,0,'bybit',pair)
 #bars_m = load_bars(30 * 12, 240,0,'bitmex')
 
 #bars_b = load_bars(30 * 12, 60,0,'bybit')
